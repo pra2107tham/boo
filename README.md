@@ -17,6 +17,17 @@ Tick **On desktop** in that panel and Boo hops out of the menu bar into a floati
 can drag anywhere. It stays on top, follows you between Spaces, and remembers where you put it.
 Right-click it to send it back.
 
+## What it does when it's out
+
+- **Watches your cursor.** Eyes follow your pointer around the screen.
+- **Click it** and it showers hearts.
+- **Dances** when music is playing — any music, through any device.
+- **Hover for a couple of seconds** and it takes it as petting.
+- **Drag it** and it squashes, then wobbles when you let go.
+- **Falls asleep** if you leave for five minutes, wakes when you come back.
+- **Cheers** when a long build finishes.
+- **Startles you** now and then, if you tick **Spooky**. Off by default.
+
 ## Install
 
 ```bash

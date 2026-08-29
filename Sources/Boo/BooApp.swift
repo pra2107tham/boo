@@ -7,6 +7,11 @@ final class BooState: ObservableObject {
     @Published private(set) var mood: Mood = .calm
 
     let animator = Animator()
+    let personality = Personality()
+
+    /// Tracks a sustained heavy load so we can notice when it ends —
+    /// that's a build finishing, and it deserves a cheer.
+    private var strainedSince: Date?
 
     private let metrics = SystemMetrics()
     private let engine = MoodEngine()
@@ -25,8 +30,23 @@ final class BooState: ObservableObject {
     private func tick() {
         let s = metrics.read()
         snapshot = s
+        let previous = mood
         mood = engine.update(s)
         animator.beatInterval = MoodEngine.beatInterval(cpu: s.cpu)
+
+        // Dance whenever sound is actually playing.
+        personality.setDancing(s.isPlayingAudio)
+
+        // Notice a long stretch of heavy load ending: that's a build or an
+        // export finishing, and it's the moment worth celebrating.
+        if mood == .strained {
+            if strainedSince == nil { strainedSince = Date() }
+        } else if let since = strainedSince {
+            if previous == .strained, Date().timeIntervalSince(since) > 25 {
+                personality.celebrate()
+            }
+            strainedSince = nil
+        }
 
         // Stop animating on low battery. The face still updates; it just
         // stops costing anything to look at.
@@ -92,7 +112,8 @@ struct BooApp: App {
         // the same instance is handed to the panel and the floating window.
         let s = BooState()
         _state = StateObject(wrappedValue: s)
-        _desktop = StateObject(wrappedValue: DesktopBoo(state: s))
+        _desktop = StateObject(wrappedValue: DesktopBoo(state: s,
+                                                        personality: s.personality))
     }
 
     var body: some Scene {
@@ -101,7 +122,8 @@ struct BooApp: App {
                   tint: state.tint,
                   subtitle: state.subtitle,
                   readings: state.readings,
-                  desktop: desktop)
+                  desktop: desktop,
+                  personality: state.personality)
         } label: {
             MenuBarFace(mood: state.mood, tint: state.tint, animator: state.animator)
         }
@@ -117,14 +139,12 @@ private struct MenuBarFace: View {
     @ObservedObject var animator: Animator
 
     var body: some View {
-        Face(mood: mood,
-             tint: tint,
-             blinking: animator.blinking,
-             gaze: animator.gaze,
-             heartScale: animator.heartScale,
-             bodyColor: .primary,
-             punchThrough: true)
-            .frame(width: 18, height: 18)
-            .offset(y: animator.float)
+        // A template NSImage rather than the SwiftUI view directly: the
+        // view's Color.primary resolves to black inside MenuBarExtra's
+        // label and vanishes against a dark bar.
+        Image(nsImage: MenuBarIcon.image(mood: mood,
+                                         blinking: animator.blinking,
+                                         gaze: animator.gaze,
+                                         heartScale: animator.heartScale))
     }
 }

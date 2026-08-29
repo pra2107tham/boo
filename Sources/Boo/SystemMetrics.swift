@@ -11,6 +11,10 @@ struct Snapshot {
     var isCharging = false
     var outputDevice = "Unknown"
     var isHeadphones = false
+    /// True when any process is actually feeding audio to the output —
+    /// music, video, a call. Distinct from isHeadphones, which only says
+    /// what the sound would come out of.
+    var isPlayingAudio = false
     /// Name of whatever is working hardest, when anything clearly is.
     var busiestProcess: String? = nil
 }
@@ -30,9 +34,10 @@ final class SystemMetrics {
             s.battery = level
             s.isCharging = charging
         }
-        let (name, headphones) = readOutputDevice()
+        let (name, headphones, playing) = readOutputDevice()
         s.outputDevice = name
         s.isHeadphones = headphones
+        s.isPlayingAudio = playing
         // Only worth the scan when something is actually loaded.
         if s.cpu >= 30 { s.busiestProcess = topProcess.busiest() }
         return s
@@ -117,7 +122,7 @@ final class SystemMetrics {
 
     // MARK: - Audio output
 
-    private func readOutputDevice() -> (String, Bool) {
+    private func readOutputDevice() -> (String, Bool, Bool) {
         var deviceID = AudioDeviceID(0)
         var size = UInt32(MemoryLayout<AudioDeviceID>.size)
         var address = AudioObjectPropertyAddress(
@@ -127,7 +132,7 @@ final class SystemMetrics {
 
         guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject),
                                          &address, 0, nil, &size, &deviceID) == noErr
-        else { return ("Unknown", false) }
+        else { return ("Unknown", false, false) }
 
         var nameAddress = AudioObjectPropertyAddress(
             mSelector: kAudioObjectPropertyName,
@@ -141,8 +146,27 @@ final class SystemMetrics {
         guard AudioObjectGetPropertyData(deviceID, &nameAddress, 0, nil,
                                          &nameSize, &unmanaged) == noErr,
               let name = unmanaged?.takeRetainedValue() as String?
-        else { return ("Unknown", false) }
-        return (name, Self.looksLikeHeadphones(name, deviceID: deviceID))
+        else { return ("Unknown", false, false) }
+
+        return (name,
+                Self.looksLikeHeadphones(name, deviceID: deviceID),
+                Self.isDeviceRunning(deviceID))
+    }
+
+    /// Whether anything is currently pushing audio through this device.
+    /// This is what catches "music is playing" regardless of whether it
+    /// comes out of speakers or headphones — the old code only knew what
+    /// kind of device was selected, so speakers playing music read as silent.
+    static func isDeviceRunning(_ deviceID: AudioDeviceID) -> Bool {
+        var running = UInt32(0)
+        var size = UInt32(MemoryLayout<UInt32>.size)
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyDeviceIsRunningSomewhere,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        guard AudioObjectGetPropertyData(deviceID, &address, 0, nil,
+                                         &size, &running) == noErr else { return false }
+        return running != 0
     }
 
     /// CoreAudio has no "is this on someone's head" flag, so this reads the

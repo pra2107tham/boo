@@ -25,12 +25,19 @@ struct Panel: View {
     let subtitle: String
     let readings: [Reading]
     @ObservedObject var desktop: DesktopBoo
+    @ObservedObject var personality: Personality
 
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 11) {
-                Face(mood: mood, tint: tint)
-                    .frame(width: 84, height: 84)
+                ZStack {
+                    Face(mood: mood, tint: tint, act: personality.act)
+                        .frame(width: 84, height: 84)
+                    ParticleLayer(particles: personality.particles)
+                        .frame(width: 110, height: 110)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { personality.showerHearts() }
                 VStack(spacing: 3) {
                     Text(mood.headline)
                         .font(.system(size: 17, weight: .bold, design: .rounded))
@@ -71,9 +78,14 @@ struct Panel: View {
 
             Divider()
 
-            HStack {
+            HStack(spacing: 14) {
                 Toggle("On desktop", isOn: $desktop.isVisible)
                     .toggleStyle(.checkbox)
+                Toggle("Spooky", isOn: Binding(
+                    get: { personality.scaresEnabled },
+                    set: { personality.scaresEnabled = $0 }))
+                    .toggleStyle(.checkbox)
+                    .help("Boo will startle you once in a while")
                 Spacer()
                 Button("Quit") { NSApplication.shared.terminate(nil) }
             }

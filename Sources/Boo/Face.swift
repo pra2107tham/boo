@@ -19,7 +19,7 @@ enum Mood: String, CaseIterable {
 
 /// The heart doubles as the load gauge, so its colour is a separate axis
 /// from the mood: audio wins, then load bands.
-enum HeartTint {
+enum HeartTint: Equatable {
     case idle, busy, hot, audio
 
     var color: Color {
@@ -41,6 +41,9 @@ struct Face: View {
     let tint: HeartTint
     var blinking = false
     var gaze: CGFloat = 0        // -1 left … 0 ahead … +1 right
+    var gazeY: CGFloat = 0       // -1 up … 0 level … +1 down
+    /// A momentary performance layered over the mood.
+    var act: Act = .none
     var heartScale: CGFloat = 1
     var bodyColor = Color(red: 0.969, green: 0.957, blue: 0.925)  // #F7F4EC
     /// Colour painted into the eyes when not punching through. Only used
@@ -55,6 +58,7 @@ struct Face: View {
     var punchThrough = false
 
     private var eyeOffset: CGFloat { gaze * 2.6 }
+    private var eyeOffsetY: CGFloat { gazeY * 2.0 }
 
     var body: some View {
         Canvas { ctx, size in
@@ -123,7 +127,49 @@ struct Face: View {
     // Eyes sit on y=31, just below centre — the baby proportion. Raising
     // them ages the character instantly, so this number is load-bearing.
     private func drawEyes(_ ctx: GraphicsContext, s: CGFloat, p: (CGFloat, CGFloat) -> CGPoint) {
-        let lx = 23 + eyeOffset, rx = 41 + eyeOffset, y: CGFloat = 31
+        let lx = 23 + eyeOffset, rx = 41 + eyeOffset, y: CGFloat = 31 + eyeOffsetY
+
+        // An act overrides the mood's eyes while it runs.
+        switch act {
+        case .scared:
+            // Huge round eyes — the whole joke is the size jump.
+            for cx in [lx, rx] {
+                let r = CGRect(x: (cx - 6.4) * s, y: (y - 6.8) * s,
+                               width: 12.8 * s, height: 13.6 * s)
+                ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
+            }
+            return
+        case .giggling, .petted, .celebrating, .hearts:
+            // Happy closed arcs, curving up.
+            for cx in [lx, rx] {
+                var arc = Path()
+                arc.move(to: p(cx - 4.4, y + 1.6))
+                arc.addQuadCurve(to: p(cx + 4.4, y + 1.6), control: p(cx, y - 4.4))
+                ctx.stroke(arc, with: .color(voidColor),
+                           style: .init(lineWidth: 3.2 * s, lineCap: .round))
+            }
+            return
+        case .sleeping:
+            // Flat closed lids — deeper asleep than the sleepy mood.
+            for cx in [lx, rx] {
+                var line = Path()
+                line.move(to: p(cx - 4.2, y))
+                line.addLine(to: p(cx + 4.2, y))
+                ctx.stroke(line, with: .color(voidColor),
+                           style: .init(lineWidth: 3.0 * s, lineCap: .round))
+            }
+            return
+        case .squashed:
+            // Squinting from the squeeze.
+            for cx in [lx, rx] {
+                let r = CGRect(x: (cx - 4.3) * s, y: (y - 2.6) * s,
+                               width: 8.6 * s, height: 5.2 * s)
+                ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
+            }
+            return
+        case .dancing, .none:
+            break
+        }
 
         if blinking || mood == .sleepy {
             for cx in [lx, rx] {

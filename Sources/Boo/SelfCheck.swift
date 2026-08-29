@@ -53,6 +53,26 @@ enum SelfCheck {
         assert(abs(MoodEngine.beatInterval(cpu: 0) - 4.0) < 0.01)
         assert(abs(MoodEngine.beatInterval(cpu: 100) - 0.4) < 0.01)
 
+        // Music on the built-in speakers must still read as tuned in —
+        // the original bug was only ever checking the device type.
+        e = MoodEngine(dwell: 0)
+        var speakers = Snapshot(cpu: 10)
+        speakers.outputDevice = "MacBook Air Speakers"
+        speakers.isHeadphones = false
+        speakers.isPlayingAudio = true
+        assert(e.update(speakers, now: base) == .tunedIn,
+               "music on speakers should count as tuned in")
+        assert(MoodEngine.tint(for: speakers) == .audio,
+               "playing audio should tint the heart teal")
+
+        // Headphones plugged in but silent is NOT tuned in.
+        e = MoodEngine(dwell: 0)
+        var silent = Snapshot(cpu: 10)
+        silent.isHeadphones = true
+        silent.isPlayingAudio = false
+        assert(e.update(silent, now: base) != .tunedIn,
+               "silent headphones should not be tuned in")
+
         // Top process needs two samples: the first has no baseline, so it
         // must return nil rather than blaming whoever booted first.
         var top = TopProcess()
@@ -62,6 +82,18 @@ enum SelfCheck {
         _ = top.busiest(now: base)
         assert(top.busiest(now: base.addingTimeInterval(0.1)) == nil,
                "sub-second gap is too short to rate")
+
+        // Particles must die rather than accumulating forever — an
+        // always-on pet leaking a growing array is how you get a 3am page.
+        let personality = MainActor.assumeIsolated { Personality() }
+        MainActor.assumeIsolated {
+            personality.emit(.heart, count: 10)
+            assert(personality.particles.count == 10, "emit should add particles")
+            // Life drains at 0.022/frame, so ~46 frames clears them.
+            for _ in 0..<60 { personality.stepParticlesForTesting() }
+            assert(personality.particles.isEmpty,
+                   "particles must expire, got \(personality.particles.count)")
+        }
 
         print("self-check passed")
         exit(0)

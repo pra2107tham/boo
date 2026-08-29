@@ -85,9 +85,11 @@ final class DesktopBoo: ObservableObject {
 
     private var panel: DesktopWindow?
     private let state: BooState
+    let personality: Personality
 
-    init(state: BooState) {
+    init(state: BooState, personality: Personality) {
         self.state = state
+        self.personality = personality
         // Off by default — the menu bar is the primary surface. Opting in
         // is a deliberate act, not something sprung on a first-time user.
         self.isVisible = UserDefaults.standard.bool(forKey: "desktopBooVisible")
@@ -96,7 +98,10 @@ final class DesktopBoo: ObservableObject {
 
     private func show() {
         guard panel == nil else { panel?.orderFront(nil); return }
-        let view = NSHostingView(rootView: DesktopFace(state: state, owner: self))
+        personality.tracksCursor = true
+        let view = NSHostingView(rootView: DesktopFace(state: state,
+                                                       personality: personality,
+                                                       owner: self))
         view.frame = NSRect(x: 0, y: 0, width: 120, height: 120)
         let p = DesktopWindow(content: view)
         p.orderFront(nil)
@@ -104,8 +109,16 @@ final class DesktopBoo: ObservableObject {
     }
 
     private func hide() {
+        personality.tracksCursor = false
         panel?.orderOut(nil)
         panel = nil
+    }
+
+    /// Keep Personality informed of where Boo sits, so cursor tracking
+    /// can work out which way to look.
+    func reportPosition() {
+        guard let p = panel else { return }
+        personality.screenPosition = CGPoint(x: p.frame.midX, y: p.frame.midY)
     }
 }
 
@@ -114,31 +127,49 @@ final class DesktopBoo: ObservableObject {
 struct DesktopFace: View {
     @ObservedObject var state: BooState
     @ObservedObject var animator: Animator
+    @ObservedObject var personality: Personality
     let owner: DesktopBoo
     @State private var hovering = false
+    @State private var hoverStart: Date?
 
-    init(state: BooState, owner: DesktopBoo) {
+    init(state: BooState, personality: Personality, owner: DesktopBoo) {
         self.state = state
         self.animator = state.animator
+        self.personality = personality
         self.owner = owner
+    }
+
+    /// Acts that should suppress the mood's own expression.
+    private var effectiveMood: Mood {
+        switch personality.act {
+        case .sleeping: return .sleepy
+        default: return state.mood
+        }
     }
 
     var body: some View {
         ZStack {
-            Face(mood: state.mood,
+            Face(mood: effectiveMood,
                  tint: state.tint,
                  blinking: animator.blinking,
-                 gaze: animator.gaze,
+                 gaze: personality.lookX,
+                 gazeY: personality.lookY,
+                 act: personality.act,
                  heartScale: animator.heartScale,
                  voidColor: Color(red: 0.05, green: 0.05, blue: 0.06))
                 .frame(width: 96, height: 96)
-                .offset(y: animator.float * 3)   // more float than the menu bar
+                // Squash on drag, sway when dancing, float when idle.
+                .scaleEffect(x: 2 - personality.squash, y: personality.squash,
+                             anchor: .bottom)
+                .rotationEffect(.degrees(personality.danceAngle), anchor: .bottom)
+                .offset(y: animator.float * 3)
                 .shadow(color: .black.opacity(0.28), radius: 10, y: 5)
 
-            // A speech bubble on hover, so you can read the state without
-            // going up to the menu bar.
-            if hovering {
-                Text(state.mood.headline)
+            ParticleLayer(particles: personality.particles)
+                .frame(width: 120, height: 120)
+
+            if hovering, personality.act != .sleeping {
+                Text(bubbleText)
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .padding(.horizontal, 9)
                     .padding(.vertical, 5)
@@ -148,13 +179,60 @@ struct DesktopFace: View {
             }
         }
         .frame(width: 120, height: 120)
-        .onHover { h in withAnimation(.easeOut(duration: 0.15)) { hovering = h } }
+        .contentShape(Rectangle())
+        // Click for hearts — the first thing anyone tries.
+        .onTapGesture { personality.showerHearts() }
+        // Drag squashes it; the window itself moves via isMovableByWindowBackground.
+        .gesture(
+            DragGesture(minimumDistance: 3)
+                .onChanged { _ in
+                    if personality.act != .squashed { personality.beginDrag() }
+                    owner.reportPosition()
+                }
+                .onEnded { _ in
+                    personality.endDrag()
+                    owner.reportPosition()
+                }
+        )
+        .onHover { h in
+            withAnimation(.easeOut(duration: 0.15)) { hovering = h }
+            if h {
+                hoverStart = Date()
+                personality.noteActivity()
+                // Linger and it counts as petting.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(2))
+                    if hovering, let start = hoverStart,
+                       Date().timeIntervalSince(start) >= 1.9 {
+                        personality.pet()
+                    }
+                }
+            } else {
+                hoverStart = nil
+            }
+        }
+        .onAppear { owner.reportPosition() }
         .contextMenu {
             Text(state.mood.headline)
+            Divider()
+            Button("Give me a fright") { personality.scare() }
+            Button("Shower hearts") { personality.showerHearts() }
             Divider()
             Button("Hide desktop Boo") { owner.isVisible = false }
             Button("Quit Boo") { NSApplication.shared.terminate(nil) }
         }
-        .help("Drag me anywhere")
+        .help("Drag me anywhere · click for hearts")
+    }
+
+    private var bubbleText: String {
+        switch personality.act {
+        case .hearts, .petted: "hehe"
+        case .scared:          "BOO!"
+        case .giggling:        "got you"
+        case .dancing:         "this one slaps"
+        case .celebrating:     "we did it"
+        case .squashed:        "wheee"
+        default:               state.mood.headline
+        }
     }
 }

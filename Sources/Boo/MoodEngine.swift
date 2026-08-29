@@ -60,14 +60,16 @@ final class MoodEngine {
         else if s.cpu < 75 { wasStrained = false }
         if wasStrained { return .strained }
 
-        if s.isHeadphones { return .tunedIn }
+        // Sound actually playing is what matters, not the device type.
+        // Speakers playing music count; silent headphones do not.
+        if s.isPlayingAudio { return .tunedIn }
         if s.cpu >= 30 { return .working }
         return .calm
     }
 
     /// Heart tint is a separate axis from mood: audio overrides, then load.
     static func tint(for s: Snapshot) -> HeartTint {
-        if s.isHeadphones { return .audio }
+        if s.isPlayingAudio { return .audio }
         if s.cpu >= 85 { return .hot }
         if s.cpu >= 30 { return .busy }
         return .idle
