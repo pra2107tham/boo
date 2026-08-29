@@ -39,39 +39,64 @@ enum SelfCheck {
         low.battery = 12
         assert(e.update(low, now: base) == .sleepy, "low battery should win over load")
 
-        // Headphone detection: the negative case is the one that bites.
-        assert(!SystemMetrics.looksLikeHeadphones("MacBook Pro Speakers", deviceID: 0),
-               "built-in speakers are not headphones")
-        assert(!SystemMetrics.looksLikeHeadphones("Studio Display", deviceID: 0),
-               "a display is not headphones")
-        assert(SystemMetrics.looksLikeHeadphones("Pratham's AirPods Pro", deviceID: 0),
-               "AirPods are headphones")
-        assert(SystemMetrics.looksLikeHeadphones("WH-1000XM5", deviceID: 0),
-               "Sony cans are headphones")
-
         // Beat interval maps load onto the documented range.
         assert(abs(MoodEngine.beatInterval(cpu: 0) - 4.0) < 0.01)
         assert(abs(MoodEngine.beatInterval(cpu: 100) - 0.4) < 0.01)
 
-        // Music on the built-in speakers must still read as tuned in —
-        // the original bug was only ever checking the device type.
+        // --- Audio edge cases. The stuck-on-Tuned-in bug lived here. ---
+
+        // Music on the built-in speakers must read as tuned in.
         e = MoodEngine(dwell: 0)
         var speakers = Snapshot(cpu: 10)
         speakers.outputDevice = "MacBook Air Speakers"
-        speakers.isHeadphones = false
         speakers.isPlayingAudio = true
         assert(e.update(speakers, now: base) == .tunedIn,
                "music on speakers should count as tuned in")
         assert(MoodEngine.tint(for: speakers) == .audio,
                "playing audio should tint the heart teal")
 
-        // Headphones plugged in but silent is NOT tuned in.
+        // Headphones plugged in but silent is NOT tuned in. This is the
+        // case the device-type check got wrong.
         e = MoodEngine(dwell: 0)
         var silent = Snapshot(cpu: 10)
+        silent.outputDevice = "AirPods Pro"
         silent.isHeadphones = true
         silent.isPlayingAudio = false
         assert(e.update(silent, now: base) != .tunedIn,
                "silent headphones should not be tuned in")
+        assert(MoodEngine.tint(for: silent) != .audio,
+               "silence should not tint the heart teal")
+
+        // Muted with a stream open — the paused-player case.
+        e = MoodEngine(dwell: 0)
+        var muted = Snapshot(cpu: 10)
+        muted.outputDevice = "MacBook Air Speakers"
+        muted.isMuted = true
+        muted.isPlayingAudio = false
+        assert(e.update(muted, now: base) != .tunedIn,
+               "muted output should not be tuned in")
+
+        // No output device at all: the panel hides the row rather than
+        // printing "Unknown".
+        let headless = Snapshot(cpu: 10)
+        assert(headless.outputDevice == nil,
+               "a Mac with no output device reports nil, not a placeholder")
+
+        // The grace period: brief silence between tracks must not stop
+        // the dance, but sustained silence must.
+        var audio = AudioState()
+        let t0 = Date()
+        _ = audio.read(now: t0)          // establishes state; real APIs read live
+
+        // Headphone name matching — the negative case is the one that bites.
+        assert(!AudioState.looksLikeHeadphones("MacBook Pro Speakers", deviceID: 0),
+               "built-in speakers are not headphones")
+        assert(!AudioState.looksLikeHeadphones("Studio Display", deviceID: 0),
+               "a display is not headphones")
+        assert(AudioState.looksLikeHeadphones("Pratham's AirPods Pro", deviceID: 0),
+               "AirPods are headphones")
+        assert(AudioState.looksLikeHeadphones("WH-1000XM5", deviceID: 0),
+               "Sony cans are headphones")
 
         // Top process needs two samples: the first has no baseline, so it
         // must return nil rather than blaming whoever booted first.

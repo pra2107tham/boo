@@ -9,12 +9,16 @@ struct Snapshot {
     var memory: Double = 0         // 0…100, pressure-style (active+wired+compressed)
     var battery: Double? = nil     // 0…100, nil when there's no battery
     var isCharging = false
-    var outputDevice = "Unknown"
+    /// nil when the Mac has no output device at all.
+    var outputDevice: String?
     var isHeadphones = false
-    /// True when any process is actually feeding audio to the output —
-    /// music, video, a call. Distinct from isHeadphones, which only says
-    /// what the sound would come out of.
+    /// True when a process is genuinely pushing audio right now — not
+    /// merely holding the device open. See AudioState for why that
+    /// distinction is the whole ballgame.
     var isPlayingAudio = false
+    var isMuted = false
+    /// App making the sound, when it can be named.
+    var audioSource: String?
     /// Name of whatever is working hardest, when anything clearly is.
     var busiestProcess: String? = nil
 }
@@ -25,6 +29,7 @@ final class SystemMetrics {
     /// CPU load is a delta between two readings, so the previous one is state.
     private var lastTicks: (user: UInt32, system: UInt32, idle: UInt32, nice: UInt32)?
     private var topProcess = TopProcess()
+    private var audio = AudioState()
 
     func read() -> Snapshot {
         var s = Snapshot()
@@ -34,10 +39,12 @@ final class SystemMetrics {
             s.battery = level
             s.isCharging = charging
         }
-        let (name, headphones, playing) = readOutputDevice()
-        s.outputDevice = name
-        s.isHeadphones = headphones
-        s.isPlayingAudio = playing
+        let a = audio.read()
+        s.outputDevice = a.deviceName
+        s.isHeadphones = a.isHeadphones
+        s.isPlayingAudio = a.isPlaying
+        s.isMuted = a.isMuted
+        s.audioSource = a.source
         // Only worth the scan when something is actually loaded.
         if s.cpu >= 30 { s.busiestProcess = topProcess.busiest() }
         return s
@@ -120,87 +127,4 @@ final class SystemMetrics {
         return nil   // desktop Mac
     }
 
-    // MARK: - Audio output
-
-    private func readOutputDevice() -> (String, Bool, Bool) {
-        var deviceID = AudioDeviceID(0)
-        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
-
-        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject),
-                                         &address, 0, nil, &size, &deviceID) == noErr
-        else { return ("Unknown", false, false) }
-
-        var nameAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioObjectPropertyName,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
-
-        // CoreAudio hands back a +1 CFString. Take it through an unmanaged
-        // pointer so ARC doesn't try to manage a value it never retained.
-        var unmanaged: Unmanaged<CFString>?
-        var nameSize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
-        guard AudioObjectGetPropertyData(deviceID, &nameAddress, 0, nil,
-                                         &nameSize, &unmanaged) == noErr,
-              let name = unmanaged?.takeRetainedValue() as String?
-        else { return ("Unknown", false, false) }
-
-        return (name,
-                Self.looksLikeHeadphones(name, deviceID: deviceID),
-                Self.isDeviceRunning(deviceID))
-    }
-
-    /// Whether anything is currently pushing audio through this device.
-    /// This is what catches "music is playing" regardless of whether it
-    /// comes out of speakers or headphones — the old code only knew what
-    /// kind of device was selected, so speakers playing music read as silent.
-    static func isDeviceRunning(_ deviceID: AudioDeviceID) -> Bool {
-        var running = UInt32(0)
-        var size = UInt32(MemoryLayout<UInt32>.size)
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyDeviceIsRunningSomewhere,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
-        guard AudioObjectGetPropertyData(deviceID, &address, 0, nil,
-                                         &size, &running) == noErr else { return false }
-        return running != 0
-    }
-
-    /// CoreAudio has no "is this on someone's head" flag, so this reads the
-    /// transport type (Bluetooth / USB / headphone jack) and falls back to
-    /// the device name. Built-in speakers and displays are explicitly out.
-    static func looksLikeHeadphones(_ name: String, deviceID: AudioDeviceID) -> Bool {
-        var transport = UInt32(0)
-        var size = UInt32(MemoryLayout<UInt32>.size)
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyTransportType,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
-
-        if AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &transport) == noErr {
-            switch transport {
-            case kAudioDeviceTransportTypeBluetooth,
-                 kAudioDeviceTransportTypeBluetoothLE,
-                 kAudioDeviceTransportTypeUSB:
-                return true
-            case kAudioDeviceTransportTypeBuiltIn,
-                 kAudioDeviceTransportTypeHDMI,
-                 kAudioDeviceTransportTypeDisplayPort:
-                // Built-in covers both the speakers and the headphone jack,
-                // so fall through to the name check rather than deciding here.
-                break
-            default:
-                break
-            }
-        }
-
-        let lower = name.lowercased()
-        // Guard the negative case first: "MacBook Pro Speakers" must not match.
-        if lower.contains("speaker") || lower.contains("display") { return false }
-        return ["airpod", "headphone", "headset", "beats", "buds", "wh-", "wf-"]
-            .contains { lower.contains($0) }
-    }
 }

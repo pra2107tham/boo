@@ -77,11 +77,14 @@ final class BooState: ObservableObject {
         switch mood {
         case .calm:     "barely doing anything"
         case .working:
-            if let p = snapshot.busiestProcess { "\(p) is busy" } else { "a few things running" }
+            if let p = snapshot.busiestProcess { "\(p) is keeping busy" }
+            else { "a few things running" }
         case .strained:
             if let p = snapshot.busiestProcess { "\(p) is eating everything" }
             else { "something is working hard" }
-        case .tunedIn:  snapshot.outputDevice
+        case .tunedIn:
+            if let src = snapshot.audioSource { "\(src) is playing" }
+            else { "bobbing along" }
         case .sleepy:   "might want a charger soon"
         case .charged:  "plugged in and happy"
         }
@@ -95,8 +98,11 @@ final class BooState: ObservableObject {
         if let b = snapshot.battery {
             rows.append(.percent("Battery", b))
         }
-        rows.append(Reading(name: "Output", value: snapshot.outputDevice,
-                            fraction: nil, tint: .clear))
+        // No output device means no row — nothing to report, so say nothing.
+        if let device = snapshot.outputDevice {
+            rows.append(Reading(name: "Output", value: device,
+                                fraction: nil, tint: .clear))
+        }
         return rows
     }
 }

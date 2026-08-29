@@ -9,7 +9,7 @@ enum Mood: String, CaseIterable {
         switch self {
         case .calm:     "All good"
         case .working:  "Busy but fine"
-        case .strained: "Struggling a bit"
+        case .strained: "Struggling"
         case .tunedIn:  "Tuned in"
         case .sleepy:   "Getting tired"
         case .charged:  "Topping up"
