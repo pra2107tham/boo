@@ -43,8 +43,16 @@ struct Face: View {
     var gaze: CGFloat = 0        // -1 left … 0 ahead … +1 right
     var heartScale: CGFloat = 1
     var bodyColor = Color(red: 0.969, green: 0.957, blue: 0.925)  // #F7F4EC
-    /// Punched-through holes show the background, so eyes need its colour.
+    /// Colour painted into the eyes when not punching through. Only used
+    /// when `punchThrough` is false.
     var voidColor = Color(red: 0.051, green: 0.055, blue: 0.067)
+    /// Cut the eyes out as real transparency instead of painting them.
+    ///
+    /// The menu bar needs this: a filled shape with same-coloured eyes
+    /// drawn on top is just a blob once macOS tints it as a template
+    /// image. Real holes survive the tint, and let the icon invert with
+    /// the menu bar for free.
+    var punchThrough = false
 
     private var eyeOffset: CGFloat { gaze * 2.6 }
 
@@ -55,9 +63,21 @@ struct Face: View {
 
             if mood == .tunedIn { drawHeadphones(ctx, s: s, p: p) }
 
-            ctx.fill(bodyPath(s: s), with: .color(bodyColor))
-            drawEyes(ctx, s: s, p: p)
-            drawHeart(ctx, s: s)
+            if punchThrough {
+                // Body and eyes share one transparency layer so
+                // destinationOut erases to nothing rather than to whatever
+                // is painted underneath.
+                ctx.drawLayer { layer in
+                    layer.fill(bodyPath(s: s), with: .color(bodyColor))
+                    layer.blendMode = .destinationOut
+                    drawEyes(layer, s: s, p: p)
+                    drawHeartCutout(layer, s: s)
+                }
+            } else {
+                ctx.fill(bodyPath(s: s), with: .color(bodyColor))
+                drawEyes(ctx, s: s, p: p)
+            }
+            if !punchThrough { drawHeart(ctx, s: s) }
 
             switch mood {
             case .strained: drawSweat(ctx, s: s)
@@ -144,7 +164,7 @@ struct Face: View {
     }
 
     // A 3px pixel grid keeps the heart crisp instead of muddy at small sizes.
-    private func drawHeart(_ ctx: GraphicsContext, s: CGFloat) {
+    private func heartPath(s: CGFloat) -> Path {
         let cells: [(CGFloat, CGFloat, CGFloat, CGFloat)] = [
             (28, 38, 3, 3), (33, 38, 3, 3), (26, 41, 12, 3), (28, 44, 8, 3), (30, 47, 4, 3)
         ]
@@ -154,11 +174,20 @@ struct Face: View {
         }
         // Scale about the heart's own centre so the beat doesn't drift.
         let c = CGPoint(x: 32 * s, y: 43 * s)
-        let beat = heart.applying(
+        return heart.applying(
             CGAffineTransform(translationX: c.x, y: c.y)
                 .scaledBy(x: heartScale, y: heartScale)
                 .translatedBy(x: -c.x, y: -c.y))
-        ctx.fill(beat, with: .color(tint.color))
+    }
+
+    private func drawHeart(_ ctx: GraphicsContext, s: CGFloat) {
+        ctx.fill(heartPath(s: s), with: .color(tint.color))
+    }
+
+    /// Heart as a hole, for the template-image path. Tint can't survive
+    /// there, so the shape has to carry the meaning on its own.
+    private func drawHeartCutout(_ ctx: GraphicsContext, s: CGFloat) {
+        ctx.fill(heartPath(s: s), with: .color(.black))
     }
 
     private func drawHeadphones(_ ctx: GraphicsContext, s: CGFloat,

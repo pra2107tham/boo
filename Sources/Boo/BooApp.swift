@@ -83,10 +83,16 @@ final class BooState: ObservableObject {
 
 @main
 struct BooApp: App {
-    @StateObject private var state = BooState()
+    @StateObject private var state: BooState
+    @StateObject private var desktop: DesktopBoo
 
     init() {
         if CommandLine.arguments.contains("--self-check") { SelfCheck.run() }
+        // DesktopBoo needs the state it renders, so both are built here and
+        // the same instance is handed to the panel and the floating window.
+        let s = BooState()
+        _state = StateObject(wrappedValue: s)
+        _desktop = StateObject(wrappedValue: DesktopBoo(state: s))
     }
 
     var body: some Scene {
@@ -94,7 +100,8 @@ struct BooApp: App {
             Panel(mood: state.mood,
                   tint: state.tint,
                   subtitle: state.subtitle,
-                  readings: state.readings)
+                  readings: state.readings,
+                  desktop: desktop)
         } label: {
             MenuBarFace(mood: state.mood, tint: state.tint, animator: state.animator)
         }
@@ -116,7 +123,7 @@ private struct MenuBarFace: View {
              gaze: animator.gaze,
              heartScale: animator.heartScale,
              bodyColor: .primary,
-             voidColor: .clear)
+             punchThrough: true)
             .frame(width: 18, height: 18)
             .offset(y: animator.float)
     }

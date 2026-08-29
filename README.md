@@ -13,6 +13,10 @@ it readable at 18 pixels.
 Click it for a small panel: CPU, memory, battery, audio output. Nothing else. It reports, it
 doesn't nag — no badges, no "issues found", no upgrade prompt.
 
+Tick **On desktop** in that panel and Boo hops out of the menu bar into a floating window you
+can drag anywhere. It stays on top, follows you between Spaces, and remembers where you put it.
+Right-click it to send it back.
+
 ## Install
 
 ```bash

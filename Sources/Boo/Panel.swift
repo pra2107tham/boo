@@ -24,6 +24,7 @@ struct Panel: View {
     let tint: HeartTint
     let subtitle: String
     let readings: [Reading]
+    @ObservedObject var desktop: DesktopBoo
 
     var body: some View {
         VStack(spacing: 0) {
@@ -71,7 +72,8 @@ struct Panel: View {
             Divider()
 
             HStack {
-                Button("Settings") {}
+                Toggle("On desktop", isOn: $desktop.isVisible)
+                    .toggleStyle(.checkbox)
                 Spacer()
                 Button("Quit") { NSApplication.shared.terminate(nil) }
             }
