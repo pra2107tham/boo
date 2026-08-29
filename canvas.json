@@ -1,0 +1,11 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",    "x": 0,    "y": 0, "w": 900, "h": 1000, "title": "Boo — character" },
+    { "file": "Popover.dc.html", "x": 1000, "y": 0, "w": 900, "h": 860,  "title": "The panel" },
+    { "file": "Spec.dc.html",    "x": 2000, "y": 0, "w": 900, "h": 1080, "title": "Build spec" }
+  ],
+  "annotations": [
+    { "id": "brief", "x": 0, "y": -210, "w": 700, "text": "Boo — a ghost for your menu bar\n\nThe rule that holds the whole thing together: the EYES carry the mood, the HEART carries the load. Neither has to do too much, so both stay readable at 18px.\n\nCharacter sheet → the panel → build spec. Say go and I write the Swift." }
+  ],
+  "launch": { "view": "canvas" }
+}

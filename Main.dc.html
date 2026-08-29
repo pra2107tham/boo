@@ -1,0 +1,178 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: Nunito, ui-rounded, "SF Pro Rounded", system-ui, sans-serif; }
+    a { color: #f5a623; } a:hover { color: #d18a17; }
+    .lbl { font-size: 11px; font-weight: 800; letter-spacing: 1.3px; text-transform: uppercase; color: #55565c; }
+    .cap { font-size: 12px; font-weight: 700; color: #edeae4; }
+    .sub { font-size: 10px; color: #6f7178; text-align: center; line-height: 1.4; }
+    .card { display: flex; flex-direction: column; align-items: center; gap: 9px; background: #17181c; border: 1px solid #242630; border-radius: 16px; padding: 16px 8px; }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; gap: 30px; padding: 40px; background: #0d0e11; min-height: 100%; box-sizing: border-box;">
+
+  <div style="display: flex; align-items: flex-start; gap: 20px;">
+    <svg width="66" height="66" viewBox="0 0 64 64">
+      <path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/>
+      <ellipse cx="23" cy="31" rx="4.3" ry="4.6" fill="#0d0e11"/>
+      <ellipse cx="41" cy="31" rx="4.3" ry="4.6" fill="#0d0e11"/>
+      <g fill="#f5a623"><rect x="28" y="38" width="3" height="3"/><rect x="33" y="38" width="3" height="3"/><rect x="26" y="41" width="12" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g>
+    </svg>
+    <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 4px;">
+      <div style="font-size: 30px; font-weight: 800; letter-spacing: -0.8px; color: #f7f4ec;">Boo</div>
+      <div style="font-size: 14px; color: #8a8d96; max-width: 520px; line-height: 1.6;">A small ghost that lives in your menu bar and quietly minds how your Mac is doing. <strong style="color: #d9d5cc;">The eyes carry the mood. The heart carries the load.</strong> Splitting the job in two is what keeps it readable at 18 pixels.</div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 11px;">
+    <div class="lbl">Actual size &mdash; dark and light menu bar</div>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; background: #1b1d22; border: 1px solid #262931; border-radius: 8px; padding: 0 14px; height: 30px;">
+        <div style="display: flex; align-items: center; gap: 18px;">
+          <svg width="18" height="18" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><ellipse cx="23" cy="31" rx="4.6" ry="4.9" fill="#1b1d22"/><ellipse cx="41" cy="31" rx="4.6" ry="4.9" fill="#1b1d22"/><g fill="#f5a623"><rect x="26" y="40" width="12" height="4"/><rect x="28" y="37" width="3" height="3"/><rect x="33" y="37" width="3" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g></svg>
+          <svg width="16" height="16" viewBox="0 0 16 16" opacity="0.45"><path d="M8 3 L8 11 M4.5 7.5 L8 11 L11.5 7.5" stroke="#f7f4ec" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>
+          <svg width="18" height="16" viewBox="0 0 18 16" opacity="0.45"><rect x="1" y="4.5" width="12" height="7" rx="2" stroke="#f7f4ec" stroke-width="1.3" fill="none"/><rect x="2.6" y="6.1" width="7" height="3.8" rx="1" fill="#f7f4ec"/><path d="M15 7 L15 9" stroke="#f7f4ec" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div style="font-size: 12px; color: #f7f4ec; opacity: 0.45; font-weight: 600;">Sat 9:41</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; background: #e9e6e0; border: 1px solid #d6d2cb; border-radius: 8px; padding: 0 14px; height: 30px;">
+        <div style="display: flex; align-items: center; gap: 18px;">
+          <svg width="18" height="18" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#2b2b2e"/><ellipse cx="23" cy="31" rx="4.6" ry="4.9" fill="#e9e6e0"/><ellipse cx="41" cy="31" rx="4.6" ry="4.9" fill="#e9e6e0"/><g fill="#e0921a"><rect x="26" y="40" width="12" height="4"/><rect x="28" y="37" width="3" height="3"/><rect x="33" y="37" width="3" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g></svg>
+          <svg width="16" height="16" viewBox="0 0 16 16" opacity="0.5"><path d="M8 3 L8 11 M4.5 7.5 L8 11 L11.5 7.5" stroke="#2b2b2e" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>
+          <svg width="18" height="16" viewBox="0 0 18 16" opacity="0.5"><rect x="1" y="4.5" width="12" height="7" rx="2" stroke="#2b2b2e" stroke-width="1.3" fill="none"/><rect x="2.6" y="6.1" width="7" height="3.8" rx="1" fill="#2b2b2e"/><path d="M15 7 L15 9" stroke="#2b2b2e" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div style="font-size: 12px; color: #2b2b2e; opacity: 0.5; font-weight: 600;">Sat 9:41</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 11.5px; color: #6f7178;">Body inverts with the menu bar. The heart keeps its amber in both &mdash; it is the one colour that never flips.</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 13px;">
+    <div class="lbl">Moods &mdash; eyes change, heart changes, body never does</div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px;">
+
+      <div class="card">
+        <svg width="60" height="60" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><ellipse cx="23" cy="31" rx="4.3" ry="4.6" fill="#17181c"/><ellipse cx="41" cy="31" rx="4.3" ry="4.6" fill="#17181c"/><g fill="#5bc98a"><rect x="28" y="38" width="3" height="3"/><rect x="33" y="38" width="3" height="3"/><rect x="26" y="41" width="12" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g></svg>
+        <div class="cap">Calm</div>
+        <div class="sub">CPU &lt; 30%<br>heart green, slow float</div>
+      </div>
+
+      <div class="card">
+        <svg width="60" height="60" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><ellipse cx="23" cy="31" rx="4.3" ry="4.6" fill="#17181c"/><ellipse cx="41" cy="31" rx="4.3" ry="4.6" fill="#17181c"/><g fill="#f5a623"><rect x="28" y="38" width="3" height="3"/><rect x="33" y="38" width="3" height="3"/><rect x="26" y="41" width="12" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g></svg>
+        <div class="cap">Working</div>
+        <div class="sub">CPU 30&ndash;70%<br>heart amber, beats faster</div>
+      </div>
+
+      <div class="card">
+        <svg width="60" height="60" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><path d="M18.6 28.4 L27.4 33.6" stroke="#17181c" stroke-width="3.4" stroke-linecap="round"/><path d="M45.4 28.4 L36.6 33.6" stroke="#17181c" stroke-width="3.4" stroke-linecap="round"/><g fill="#ef5f4c"><rect x="28" y="38" width="3" height="3"/><rect x="33" y="38" width="3" height="3"/><rect x="26" y="41" width="12" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g><path d="M52 14 Q55.6 19 52 23 Q48.4 19 52 14 Z" fill="#79b8dd"/></svg>
+        <div class="cap">Strained</div>
+        <div class="sub">CPU &gt; 85%<br>strain brows, sweat drop</div>
+      </div>
+
+      <div class="card">
+        <svg width="60" height="60" viewBox="0 0 64 64"><path d="M12 30.5 L12 26 A20 20 0 0 1 52 26 L52 30.5" stroke="#f7f4ec" stroke-width="4" fill="none" stroke-linecap="round"/><rect x="6.5" y="28" width="9.5" height="15" rx="4.7" fill="#f7f4ec"/><rect x="48" y="28" width="9.5" height="15" rx="4.7" fill="#f7f4ec"/><path d="M32 9 C44.2 9 52 18 52 30 L52 48.2 C52 51.4 49.4 52.6 47.6 50.6 C45.9 48.7 43.5 48.7 41.8 50.6 C40 52.6 37.4 52.6 35.6 50.6 C33.9 48.7 31.5 48.7 29.8 50.6 C28 52.6 25.4 52.6 23.6 50.6 C21.9 48.7 19.5 48.7 17.8 50.6 C16 52.6 13.6 51.4 13.6 48.2 L13.6 30 C13.6 18 19.8 9 32 9 Z" fill="#f7f4ec"/><ellipse cx="24" cy="32" rx="4.1" ry="4.4" fill="#17181c"/><ellipse cx="40" cy="32" rx="4.1" ry="4.4" fill="#17181c"/><g fill="#57c4c0"><rect x="28.5" y="39" width="3" height="3"/><rect x="33" y="39" width="3" height="3"/><rect x="26.5" y="42" width="11" height="3"/><rect x="28.5" y="45" width="7" height="3"/><rect x="30.5" y="48" width="3" height="3"/></g></svg>
+        <div class="cap">Tuned in</div>
+        <div class="sub">headphones plugged in<br>bobs to the beat</div>
+      </div>
+
+      <div class="card">
+        <svg width="60" height="60" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#9b9891"/><path d="M18.4 31 Q23 35.4 27.6 31" stroke="#17181c" stroke-width="3.2" fill="none" stroke-linecap="round"/><path d="M36.4 31 Q41 35.4 45.6 31" stroke="#17181c" stroke-width="3.2" fill="none" stroke-linecap="round"/><g fill="#c98a3a"><rect x="28" y="38" width="3" height="3"/><rect x="33" y="38" width="3" height="3"/><rect x="26" y="41" width="12" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g><path d="M46 9 h7 l-7 7 h7" stroke="#c9c5bd" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="cap">Sleepy</div>
+        <div class="sub">battery &lt; 20%<br>dimmed, lids closed</div>
+      </div>
+
+      <div class="card">
+        <svg width="60" height="60" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><path d="M18.6 33 L23 28 L27.4 33" stroke="#17181c" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M36.6 33 L41 28 L45.4 33" stroke="#17181c" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><g fill="#5bc98a"><rect x="28" y="38" width="3" height="3"/><rect x="33" y="38" width="3" height="3"/><rect x="26" y="41" width="12" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g><path d="M52 8 l-4.6 8 h3.4 l-2.4 7 6 -9 h-3.4 z" fill="#5bc98a"/></svg>
+        <div class="cap">Charged</div>
+        <div class="sub">plugged in<br>happy eyes, bolt</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;">
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="lbl">The heart is the gauge</div>
+      <div style="display: flex; gap: 10px;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 7px;">
+          <svg width="34" height="34" viewBox="0 0 16 16"><g fill="#5bc98a"><rect x="4" y="3" width="2" height="2"/><rect x="10" y="3" width="2" height="2"/><rect x="3" y="5" width="10" height="2"/><rect x="4" y="7" width="8" height="2"/><rect x="5" y="9" width="6" height="2"/><rect x="7" y="11" width="2" height="2"/></g></svg>
+          <div style="font-size: 9.5px; color: #6f7178; text-align: center;">idle<br>green</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 7px;">
+          <svg width="34" height="34" viewBox="0 0 16 16"><g fill="#f5a623"><rect x="4" y="3" width="2" height="2"/><rect x="10" y="3" width="2" height="2"/><rect x="3" y="5" width="10" height="2"/><rect x="4" y="7" width="8" height="2"/><rect x="5" y="9" width="6" height="2"/><rect x="7" y="11" width="2" height="2"/></g></svg>
+          <div style="font-size: 9.5px; color: #6f7178; text-align: center;">busy<br>amber</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 7px;">
+          <svg width="34" height="34" viewBox="0 0 16 16"><g fill="#ef5f4c"><rect x="4" y="3" width="2" height="2"/><rect x="10" y="3" width="2" height="2"/><rect x="3" y="5" width="10" height="2"/><rect x="4" y="7" width="8" height="2"/><rect x="5" y="9" width="6" height="2"/><rect x="7" y="11" width="2" height="2"/></g></svg>
+          <div style="font-size: 9.5px; color: #6f7178; text-align: center;">hot<br>red</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 7px;">
+          <svg width="34" height="34" viewBox="0 0 16 16"><g fill="#57c4c0"><rect x="4" y="3" width="2" height="2"/><rect x="10" y="3" width="2" height="2"/><rect x="3" y="5" width="10" height="2"/><rect x="4" y="7" width="8" height="2"/><rect x="5" y="9" width="6" height="2"/><rect x="7" y="11" width="2" height="2"/></g></svg>
+          <div style="font-size: 9.5px; color: #6f7178; text-align: center;">audio<br>teal</div>
+        </div>
+      </div>
+      <div style="font-size: 12px; color: #8a8d96; line-height: 1.6; max-width: 250px;">It also <em>beats</em> &mdash; pulse rate tracks CPU. Idle is one slow beat every four seconds; pegged is a rapid flutter. Motion you catch without looking directly at it.</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="lbl">Gaze &mdash; idle personality</div>
+      <div style="display: flex; gap: 9px;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <svg width="42" height="42" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><ellipse cx="23" cy="31" rx="4.3" ry="4.6" fill="#0d0e11"/><ellipse cx="41" cy="31" rx="4.3" ry="4.6" fill="#0d0e11"/></svg>
+          <div style="font-size: 9px; color: #6f7178;">ahead</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <svg width="42" height="42" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><ellipse cx="20.4" cy="31" rx="4.3" ry="4.6" fill="#0d0e11"/><ellipse cx="38.4" cy="31" rx="4.3" ry="4.6" fill="#0d0e11"/></svg>
+          <div style="font-size: 9px; color: #6f7178;">left</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <svg width="42" height="42" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><ellipse cx="25.6" cy="31" rx="4.3" ry="4.6" fill="#0d0e11"/><ellipse cx="43.6" cy="31" rx="4.3" ry="4.6" fill="#0d0e11"/></svg>
+          <div style="font-size: 9px; color: #6f7178;">right</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <svg width="42" height="42" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><path d="M18.6 31 Q23 34.6 27.4 31" stroke="#0d0e11" stroke-width="3.2" fill="none" stroke-linecap="round"/><path d="M36.6 31 Q41 34.6 45.4 31" stroke="#0d0e11" stroke-width="3.2" fill="none" stroke-linecap="round"/></svg>
+          <div style="font-size: 9px; color: #6f7178;">blink</div>
+        </div>
+      </div>
+      <div style="font-size: 12px; color: #8a8d96; line-height: 1.6; max-width: 230px;">Blinks every 4&ndash;7 seconds, glances around now and then. Never while you are actively watching a build fail.</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="lbl">Legibility check &mdash; shrink test</div>
+      <div style="display: flex; align-items: flex-end; gap: 14px; background: #17181c; border: 1px solid #242630; border-radius: 16px; padding: 18px 20px;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 7px;">
+          <svg width="44" height="44" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><ellipse cx="23" cy="31" rx="4.3" ry="4.6" fill="#17181c"/><ellipse cx="41" cy="31" rx="4.3" ry="4.6" fill="#17181c"/><g fill="#f5a623"><rect x="28" y="38" width="3" height="3"/><rect x="33" y="38" width="3" height="3"/><rect x="26" y="41" width="12" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g></svg>
+          <div style="font-size: 9px; color: #6f7178;">44</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 7px;">
+          <svg width="28" height="28" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><ellipse cx="23" cy="31" rx="4.5" ry="4.8" fill="#17181c"/><ellipse cx="41" cy="31" rx="4.5" ry="4.8" fill="#17181c"/><g fill="#f5a623"><rect x="26" y="40" width="12" height="4"/><rect x="28" y="37" width="3" height="3"/><rect x="33" y="37" width="3" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g></svg>
+          <div style="font-size: 9px; color: #6f7178;">28</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 7px;">
+          <svg width="18" height="18" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><ellipse cx="23" cy="31" rx="4.6" ry="4.9" fill="#17181c"/><ellipse cx="41" cy="31" rx="4.6" ry="4.9" fill="#17181c"/><g fill="#f5a623"><rect x="26" y="40" width="12" height="4"/><rect x="28" y="37" width="3" height="3"/><rect x="33" y="37" width="3" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g></svg>
+          <div style="font-size: 9px; color: #6f7178;">18</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 7px;">
+          <svg width="13" height="13" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><ellipse cx="23" cy="31" rx="5" ry="5.2" fill="#17181c"/><ellipse cx="41" cy="31" rx="5" ry="5.2" fill="#17181c"/><g fill="#f5a623"><rect x="26" y="40" width="12" height="5"/><rect x="28" y="36" width="3" height="4"/><rect x="33" y="36" width="3" height="4"/><rect x="29" y="45" width="6" height="3"/></g></svg>
+          <div style="font-size: 9px; color: #6f7178;">13</div>
+        </div>
+      </div>
+      <div style="font-size: 12px; color: #8a8d96; line-height: 1.6; max-width: 250px;">Eyes get proportionally bigger and the heart simplifies as it shrinks &mdash; two drawings, not one scaled down.</div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

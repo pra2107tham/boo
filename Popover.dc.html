@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: Nunito, ui-rounded, "SF Pro Rounded", system-ui, sans-serif; }
+    a { color: #f5a623; } a:hover { color: #d18a17; }
+    .lbl { font-size: 11px; font-weight: 800; letter-spacing: 1.3px; text-transform: uppercase; color: #55565c; }
+    .row { display: flex; align-items: center; gap: 12px; padding: 11px 18px; }
+    .rname { flex-grow: 1; font-size: 12.5px; font-weight: 600; color: #9a9da6; }
+    .rval { font-size: 14px; font-weight: 800; color: #f7f4ec; font-variant-numeric: tabular-nums; }
+    .bar { width: 62px; height: 4px; border-radius: 2px; background: #262930; overflow: hidden; }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; gap: 26px; padding: 40px; background: #0d0e11; min-height: 100%; box-sizing: border-box;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div style="font-size: 25px; font-weight: 800; letter-spacing: -0.6px; color: #f7f4ec;">The panel</div>
+    <div style="font-size: 13.5px; color: #8a8d96; max-width: 480px; line-height: 1.6;">One click. Boo big at the top saying how things are in plain words, four rows underneath, nothing else. 268&nbsp;px wide.</div>
+  </div>
+
+  <div style="display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap;">
+
+    <div style="display: flex; flex-direction: column; gap: 11px;">
+      <div class="lbl">Calm</div>
+      <div style="width: 268px; background: #17181c; border: 1px solid #262930; border-radius: 20px; box-shadow: 0 18px 44px rgba(0,0,0,0.55); overflow: hidden;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 11px; padding: 26px 20px 20px;">
+          <svg width="84" height="84" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><ellipse cx="23" cy="31" rx="4.3" ry="4.6" fill="#17181c"/><ellipse cx="41" cy="31" rx="4.3" ry="4.6" fill="#17181c"/><g fill="#5bc98a"><rect x="28" y="38" width="3" height="3"/><rect x="33" y="38" width="3" height="3"/><rect x="26" y="41" width="12" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g></svg>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+            <div style="font-size: 17px; font-weight: 800; color: #f7f4ec; letter-spacing: -0.3px;">All good</div>
+            <div style="font-size: 12px; color: #6f7178;">barely doing anything</div>
+          </div>
+        </div>
+        <div style="border-top: 1px solid #1f2127;">
+          <div class="row" style="border-bottom: 1px solid #1a1c21;">
+            <span class="rname">Processor</span>
+            <span class="bar"><span style="display: block; width: 18%; height: 100%; background: #5bc98a;"></span></span>
+            <span class="rval" style="width: 38px; text-align: right;">18%</span>
+          </div>
+          <div class="row" style="border-bottom: 1px solid #1a1c21;">
+            <span class="rname">Memory</span>
+            <span class="bar"><span style="display: block; width: 54%; height: 100%; background: #f5a623;"></span></span>
+            <span class="rval" style="width: 38px; text-align: right;">54%</span>
+          </div>
+          <div class="row" style="border-bottom: 1px solid #1a1c21;">
+            <span class="rname">Battery</span>
+            <span class="bar"><span style="display: block; width: 82%; height: 100%; background: #5bc98a;"></span></span>
+            <span class="rval" style="width: 38px; text-align: right;">82%</span>
+          </div>
+          <div class="row">
+            <span class="rname">Output</span>
+            <span style="display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; color: #f7f4ec;">
+              <svg width="14" height="14" viewBox="0 0 16 16"><path d="M2.5 9.5 L2.5 8 A5.5 5.5 0 0 1 13.5 8 L13.5 9.5" stroke="#57c4c0" stroke-width="1.4" fill="none" stroke-linecap="round"/><rect x="1" y="9" width="3.4" height="5" rx="1.7" fill="#57c4c0"/><rect x="11.6" y="9" width="3.4" height="5" rx="1.7" fill="#57c4c0"/></svg>
+              AirPods Pro
+            </span>
+          </div>
+        </div>
+        <div style="border-top: 1px solid #1f2127; padding: 10px 18px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 11.5px; color: #55565c; font-weight: 700;">Settings</span>
+          <span style="font-size: 11.5px; color: #55565c; font-weight: 700;">Quit</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 11px;">
+      <div class="lbl">Strained</div>
+      <div style="width: 268px; background: #17181c; border: 1px solid #3a2622; border-radius: 20px; box-shadow: 0 18px 44px rgba(0,0,0,0.55); overflow: hidden;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 11px; padding: 26px 20px 20px;">
+          <svg width="84" height="84" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec"/><path d="M18.6 28.4 L27.4 33.6" stroke="#17181c" stroke-width="3.4" stroke-linecap="round"/><path d="M45.4 28.4 L36.6 33.6" stroke="#17181c" stroke-width="3.4" stroke-linecap="round"/><g fill="#ef5f4c"><rect x="28" y="38" width="3" height="3"/><rect x="33" y="38" width="3" height="3"/><rect x="26" y="41" width="12" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g><path d="M52 14 Q55.6 19 52 23 Q48.4 19 52 14 Z" fill="#79b8dd"/></svg>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+            <div style="font-size: 17px; font-weight: 800; color: #f7f4ec; letter-spacing: -0.3px;">Struggling a bit</div>
+            <div style="font-size: 12px; color: #6f7178;">Xcode is eating everything</div>
+          </div>
+        </div>
+        <div style="border-top: 1px solid #1f2127;">
+          <div class="row" style="border-bottom: 1px solid #1a1c21;">
+            <span class="rname">Processor</span>
+            <span class="bar"><span style="display: block; width: 94%; height: 100%; background: #ef5f4c;"></span></span>
+            <span class="rval" style="width: 38px; text-align: right;">94%</span>
+          </div>
+          <div class="row" style="border-bottom: 1px solid #1a1c21;">
+            <span class="rname">Memory</span>
+            <span class="bar"><span style="display: block; width: 88%; height: 100%; background: #ef5f4c;"></span></span>
+            <span class="rval" style="width: 38px; text-align: right;">88%</span>
+          </div>
+          <div class="row" style="border-bottom: 1px solid #1a1c21;">
+            <span class="rname">Battery</span>
+            <span class="bar"><span style="display: block; width: 61%; height: 100%; background: #f5a623;"></span></span>
+            <span class="rval" style="width: 38px; text-align: right;">61%</span>
+          </div>
+          <div class="row">
+            <span class="rname">Output</span>
+            <span style="font-size: 12.5px; font-weight: 700; color: #f7f4ec;">MacBook Speakers</span>
+          </div>
+        </div>
+        <div style="border-top: 1px solid #1f2127; padding: 10px 18px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 11.5px; color: #55565c; font-weight: 700;">Settings</span>
+          <span style="font-size: 11.5px; color: #55565c; font-weight: 700;">Quit</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 11px;">
+      <div class="lbl">Light mode &mdash; sleepy</div>
+      <div style="width: 268px; background: #fbfaf7; border: 1px solid #e4e0d8; border-radius: 20px; box-shadow: 0 18px 44px rgba(20,18,14,0.14); overflow: hidden;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 11px; padding: 26px 20px 20px;">
+          <svg width="84" height="84" viewBox="0 0 64 64"><path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#8d8a83"/><path d="M18.4 31 Q23 35.4 27.6 31" stroke="#fbfaf7" stroke-width="3.2" fill="none" stroke-linecap="round"/><path d="M36.4 31 Q41 35.4 45.6 31" stroke="#fbfaf7" stroke-width="3.2" fill="none" stroke-linecap="round"/><g fill="#c98a3a"><rect x="28" y="38" width="3" height="3"/><rect x="33" y="38" width="3" height="3"/><rect x="26" y="41" width="12" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g><path d="M46 9 h7 l-7 7 h7" stroke="#a8a49b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+            <div style="font-size: 17px; font-weight: 800; color: #23221f; letter-spacing: -0.3px;">Getting tired</div>
+            <div style="font-size: 12px; color: #918d84;">might want a charger soon</div>
+          </div>
+        </div>
+        <div style="border-top: 1px solid #eeebe4;">
+          <div class="row" style="border-bottom: 1px solid #f3f1ea;">
+            <span class="rname" style="color: #6f6b63;">Processor</span>
+            <span class="bar" style="background: #eae7df;"><span style="display: block; width: 12%; height: 100%; background: #4ba876;"></span></span>
+            <span class="rval" style="width: 38px; text-align: right; color: #23221f;">12%</span>
+          </div>
+          <div class="row" style="border-bottom: 1px solid #f3f1ea;">
+            <span class="rname" style="color: #6f6b63;">Memory</span>
+            <span class="bar" style="background: #eae7df;"><span style="display: block; width: 41%; height: 100%; background: #4ba876;"></span></span>
+            <span class="rval" style="width: 38px; text-align: right; color: #23221f;">41%</span>
+          </div>
+          <div class="row" style="border-bottom: 1px solid #f3f1ea;">
+            <span class="rname" style="color: #6f6b63;">Battery</span>
+            <span class="bar" style="background: #eae7df;"><span style="display: block; width: 14%; height: 100%; background: #e0921a;"></span></span>
+            <span class="rval" style="width: 38px; text-align: right; color: #23221f;">14%</span>
+          </div>
+          <div class="row">
+            <span class="rname" style="color: #6f6b63;">Output</span>
+            <span style="font-size: 12.5px; font-weight: 700; color: #23221f;">MacBook Speakers</span>
+          </div>
+        </div>
+        <div style="border-top: 1px solid #eeebe4; padding: 10px 18px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 11.5px; color: #a5a199; font-weight: 700;">Settings</span>
+          <span style="font-size: 11.5px; color: #a5a199; font-weight: 700;">Quit</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px; max-width: 830px;">
+    <div class="lbl">What it says, and what it refuses to say</div>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <div style="flex-grow: 1; min-width: 250px; background: #141815; border: 1px solid #24302a; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 7px;">
+        <div style="font-size: 11px; font-weight: 800; color: #5bc98a; letter-spacing: 0.6px;">SAYS</div>
+        <div style="font-size: 12.5px; color: #9a9da6; line-height: 1.65;">&ldquo;All good&rdquo; &middot; &ldquo;Struggling a bit&rdquo; &middot; &ldquo;Getting tired&rdquo; &middot; &ldquo;Xcode is eating everything&rdquo;</div>
+        <div style="font-size: 11.5px; color: #6f7178; line-height: 1.6;">Plain sentences a person would say. The subtitle names the actual culprit process when one is obvious.</div>
+      </div>
+      <div style="flex-grow: 1; min-width: 250px; background: #1a1416; border: 1px solid #33232a; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 7px;">
+        <div style="font-size: 11px; font-weight: 800; color: #ef5f4c; letter-spacing: 0.6px;">NEVER SAYS</div>
+        <div style="font-size: 12.5px; color: #9a9da6; line-height: 1.65;">&ldquo;Optimise now!&rdquo; &middot; &ldquo;3 issues found&rdquo; &middot; &ldquo;Upgrade to Pro&rdquo; &middot; a red badge with a number on it</div>
+        <div style="font-size: 11.5px; color: #6f7178; line-height: 1.6;">It reports, it does not nag. No cleaning, no notifications, no alarm. If you want it to shut up entirely, it just sleeps.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

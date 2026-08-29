@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: Nunito, ui-rounded, "SF Pro Rounded", system-ui, sans-serif; }
+    a { color: #f5a623; } a:hover { color: #d18a17; }
+    .lbl { font-size: 11px; font-weight: 800; letter-spacing: 1.3px; text-transform: uppercase; color: #55565c; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; }
+    th { font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: #6f7178; text-align: left; padding: 0 12px 9px 0; }
+    td { font-size: 12.5px; color: #c8cad0; padding: 9px 12px 9px 0; border-top: 1px solid #1f2127; vertical-align: top; }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; gap: 28px; padding: 40px; background: #0d0e11; min-height: 100%; box-sizing: border-box;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div style="font-size: 25px; font-weight: 800; letter-spacing: -0.6px; color: #f7f4ec;">Build spec</div>
+    <div style="font-size: 13.5px; color: #8a8d96; max-width: 500px; line-height: 1.6;">Everything needed to write the Swift. Thresholds have hysteresis so the face cannot flicker between states.</div>
+  </div>
+
+  <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;">
+
+    <div style="display: flex; flex-direction: column; gap: 12px; min-width: 430px; flex-grow: 1;">
+      <div class="lbl">State machine</div>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr><th>State</th><th>Enters when</th><th>Leaves when</th><th>Priority</th></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Charged</td><td>power adapter connected</td><td>unplugged</td><td class="mono" style="color: #f5a623;">1</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Sleepy</td><td>battery &le; 20%, on battery</td><td>battery &ge; 25%</td><td class="mono" style="color: #f5a623;">2</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Strained</td><td>CPU &ge; 85% for 5s</td><td>CPU &lt; 75% for 5s</td><td class="mono" style="color: #f5a623;">3</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Tuned in</td><td>output device is headphones</td><td>back to built-in</td><td class="mono" style="color: #f5a623;">4</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Working</td><td>CPU 30&ndash;70%</td><td>outside that band</td><td class="mono" style="color: #f5a623;">5</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Calm</td><td>default</td><td>&mdash;</td><td class="mono" style="color: #f5a623;">6</td></tr>
+      </table>
+      <div style="font-size: 11.5px; color: #6f7178; line-height: 1.6;">Highest-priority matching state wins. The 5&nbsp;s dwell and the gap between enter and leave thresholds are what stop it flickering during a build.</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; min-width: 300px;">
+      <div class="lbl">Colours</div>
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="display: flex; align-items: center; gap: 11px;"><span style="width: 26px; height: 26px; border-radius: 7px; background: #f7f4ec;"></span><span class="mono" style="font-size: 11.5px; color: #c8cad0;">#F7F4EC</span><span style="font-size: 11.5px; color: #6f7178;">body, dark mode</span></div>
+        <div style="display: flex; align-items: center; gap: 11px;"><span style="width: 26px; height: 26px; border-radius: 7px; background: #2b2b2e;"></span><span class="mono" style="font-size: 11.5px; color: #c8cad0;">#2B2B2E</span><span style="font-size: 11.5px; color: #6f7178;">body, light mode</span></div>
+        <div style="display: flex; align-items: center; gap: 11px;"><span style="width: 26px; height: 26px; border-radius: 7px; background: #5bc98a;"></span><span class="mono" style="font-size: 11.5px; color: #c8cad0;">#5BC98A</span><span style="font-size: 11.5px; color: #6f7178;">heart, idle</span></div>
+        <div style="display: flex; align-items: center; gap: 11px;"><span style="width: 26px; height: 26px; border-radius: 7px; background: #f5a623;"></span><span class="mono" style="font-size: 11.5px; color: #c8cad0;">#F5A623</span><span style="font-size: 11.5px; color: #6f7178;">heart, busy</span></div>
+        <div style="display: flex; align-items: center; gap: 11px;"><span style="width: 26px; height: 26px; border-radius: 7px; background: #ef5f4c;"></span><span class="mono" style="font-size: 11.5px; color: #c8cad0;">#EF5F4C</span><span style="font-size: 11.5px; color: #6f7178;">heart, hot</span></div>
+        <div style="display: flex; align-items: center; gap: 11px;"><span style="width: 26px; height: 26px; border-radius: 7px; background: #57c4c0;"></span><span class="mono" style="font-size: 11.5px; color: #c8cad0;">#57C4C0</span><span style="font-size: 11.5px; color: #6f7178;">heart, audio</span></div>
+        <div style="display: flex; align-items: center; gap: 11px;"><span style="width: 26px; height: 26px; border-radius: 7px; background: #17181c; border: 1px solid #262930;"></span><span class="mono" style="font-size: 11.5px; color: #c8cad0;">#17181C</span><span style="font-size: 11.5px; color: #6f7178;">panel, dark</span></div>
+        <div style="display: flex; align-items: center; gap: 11px;"><span style="width: 26px; height: 26px; border-radius: 7px; background: #fbfaf7; border: 1px solid #e4e0d8;"></span><span class="mono" style="font-size: 11.5px; color: #c8cad0;">#FBFAF7</span><span style="font-size: 11.5px; color: #6f7178;">panel, light</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;">
+
+    <div style="display: flex; flex-direction: column; gap: 12px; min-width: 380px; flex-grow: 1;">
+      <div class="lbl">Motion</div>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr><th>What</th><th>Timing</th></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Idle float</td><td>&plusmn;0.5&nbsp;px vertical, 3&nbsp;s ease-in-out, forever</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Blink</td><td>120&nbsp;ms close-open, random every 4&ndash;7&nbsp;s</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Glance</td><td>eyes shift 2&nbsp;px, hold 900&nbsp;ms, return. ~1 in 4 blinks</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Heartbeat</td><td>scale 1.0&rarr;1.15, interval maps CPU: 4&nbsp;s idle &rarr; 0.4&nbsp;s pegged</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Hem ripple</td><td>waves offset 80&nbsp;ms apart, only while floating</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">State change</td><td>250&nbsp;ms cross-fade, eyes morph, no bounce</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Headphone bob</td><td>&plusmn;1&nbsp;px, 500&nbsp;ms, only when audio is actually playing</td></tr>
+      </table>
+      <div style="font-size: 11.5px; color: #6f7178; line-height: 1.6;">All animation pauses when the display sleeps or on battery saver. A menu bar pet that drains your battery is a bad joke.</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; min-width: 330px; flex-grow: 1;">
+      <div class="lbl">Data sources &mdash; no permissions needed</div>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr><th>Signal</th><th>API</th></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">CPU load</td><td class="mono" style="font-size: 11.5px;">host_statistics64 &middot; HOST_CPU_LOAD_INFO</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Memory</td><td class="mono" style="font-size: 11.5px;">host_statistics64 &middot; HOST_VM_INFO64</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Battery</td><td class="mono" style="font-size: 11.5px;">IOPSCopyPowerSourcesInfo</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Audio out</td><td class="mono" style="font-size: 11.5px;">AudioObjectGetPropertyData &middot; kAudioHardwarePropertyDefaultOutputDevice</td></tr>
+        <tr><td style="color: #f7f4ec; font-weight: 700;">Top process</td><td class="mono" style="font-size: 11.5px;">proc_listpids + proc_pid_rusage</td></tr>
+      </table>
+      <div style="font-size: 11.5px; color: #6f7178; line-height: 1.6;">Every one is a public API needing zero entitlements &mdash; no accessibility prompt, no login item, no sandbox exception. Poll every 2&nbsp;s.</div>
+    </div>
+
+  </div>
+
+  <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;">
+
+    <div style="display: flex; flex-direction: column; gap: 12px; min-width: 300px;">
+      <div class="lbl">Geometry</div>
+      <div style="display: flex; gap: 18px; align-items: flex-start;">
+        <svg width="150" height="150" viewBox="0 0 64 64" style="background: #17181c; border-radius: 12px; border: 1px solid #262930;">
+          <g stroke="#3a3d47" stroke-width="0.3"><path d="M0 16 H64 M0 32 H64 M0 48 H64 M16 0 V64 M32 0 V64 M48 0 V64"/></g>
+          <path d="M32 5 C45.8 5 55 15 55 28.5 L55 48.2 C55 51.4 52 52.6 50 50.6 C48.1 48.7 45.4 48.7 43.5 50.6 C41.5 52.6 38.6 52.6 36.6 50.6 C34.7 48.7 32 48.7 30.1 50.6 C28.1 52.6 25.2 52.6 23.2 50.6 C21.3 48.7 18.6 48.7 16.7 50.6 C14.7 52.6 12 51.4 12 48.2 L12 28.5 C12 15 18.2 5 32 5 Z" fill="#f7f4ec" fill-opacity="0.9"/>
+          <ellipse cx="23" cy="31" rx="4.3" ry="4.6" fill="#17181c"/><ellipse cx="41" cy="31" rx="4.3" ry="4.6" fill="#17181c"/>
+          <g fill="#f5a623"><rect x="28" y="38" width="3" height="3"/><rect x="33" y="38" width="3" height="3"/><rect x="26" y="41" width="12" height="3"/><rect x="28" y="44" width="8" height="3"/><rect x="30" y="47" width="4" height="3"/></g>
+          <g stroke="#ef5f4c" stroke-width="0.4" stroke-dasharray="1.5 1.5" fill="none"><path d="M12 31 H55"/><path d="M32 5 V52"/></g>
+        </svg>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11.5px; color: #8a8d96; line-height: 1.6; max-width: 190px;">
+          <div>64&times;64 grid. Body spans x&nbsp;12&ndash;55, y&nbsp;5&ndash;52.</div>
+          <div>Eyes on y&nbsp;31 &mdash; just below centre. That is the baby proportion; moving them up ages the character instantly.</div>
+          <div>Eye centres x&nbsp;23 and 41, radius 4.3&times;4.6 &mdash; very slightly taller than wide.</div>
+          <div>Heart is a 3&nbsp;px pixel grid so it stays crisp. Hem is three waves, never four.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; min-width: 320px; flex-grow: 1;">
+      <div class="lbl">Scope &mdash; v1 ships this and nothing more</div>
+      <div style="display: flex; flex-direction: column; gap: 9px;">
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #141815; border: 1px solid #24302a; border-radius: 12px; padding: 13px 15px;">
+          <span style="font-size: 12px; color: #5bc98a; font-weight: 800;">IN</span>
+          <span style="font-size: 12.5px; color: #9a9da6; line-height: 1.6;">Six states &middot; four panel rows &middot; blink and gaze &middot; heartbeat &middot; light and dark &middot; launch at login toggle</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: flex-start; background: #1a1416; border: 1px solid #33232a; border-radius: 12px; padding: 13px 15px;">
+          <span style="font-size: 12px; color: #ef5f4c; font-weight: 800;">OUT</span>
+          <span style="font-size: 12.5px; color: #9a9da6; line-height: 1.6;">Graphs &middot; history &middot; per-core detail &middot; process list &middot; notifications &middot; costume days &middot; themes &middot; preferences window beyond one small panel</span>
+        </div>
+        <div style="font-size: 11.5px; color: #6f7178; line-height: 1.65;">Costume days and extra moods are easy to add once the shape ships. Adding them now is how this turns into a six-month project that never launches.</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
