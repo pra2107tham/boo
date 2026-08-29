@@ -53,6 +53,16 @@ enum SelfCheck {
         assert(abs(MoodEngine.beatInterval(cpu: 0) - 4.0) < 0.01)
         assert(abs(MoodEngine.beatInterval(cpu: 100) - 0.4) < 0.01)
 
+        // Top process needs two samples: the first has no baseline, so it
+        // must return nil rather than blaming whoever booted first.
+        var top = TopProcess()
+        assert(top.busiest(now: base) == nil, "first sample has no baseline")
+
+        // Two samples too close together are meaningless — also nil.
+        _ = top.busiest(now: base)
+        assert(top.busiest(now: base.addingTimeInterval(0.1)) == nil,
+               "sub-second gap is too short to rate")
+
         print("self-check passed")
         exit(0)
     }

@@ -37,6 +37,15 @@ The full design — character sheet, panel, and build spec — is at
 
 `brief/` holds the prompts used to explore the character, if you want to see how Boo was found.
 
+## Checks
+
+```bash
+swift run Boo --self-check
+```
+
+Covers the parts that fail quietly: threshold flapping, headphone name matching,
+and the top-process baseline.
+
 ## Adding a mood
 
 Moods are cases on one enum with a matching set of eye shapes. Adding one is roughly ten lines

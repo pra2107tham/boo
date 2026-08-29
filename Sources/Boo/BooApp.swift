@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// Owns the polling loop and the current mood. One timer, one snapshot,
-/// no reactive machinery — this ticks every 2s for as long as the Mac is on.
+/// Owns the polling loop, the mood, and the animation clock.
 @MainActor
 final class BooState: ObservableObject {
     @Published private(set) var snapshot = Snapshot()
     @Published private(set) var mood: Mood = .calm
+
+    let animator = Animator()
 
     private let metrics = SystemMetrics()
     private let engine = MoodEngine()
@@ -16,6 +17,7 @@ final class BooState: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
+        observePowerAndSleep()
     }
 
     deinit { timer?.invalidate() }
@@ -24,6 +26,29 @@ final class BooState: ObservableObject {
         let s = metrics.read()
         snapshot = s
         mood = engine.update(s)
+        animator.beatInterval = MoodEngine.beatInterval(cpu: s.cpu)
+
+        // Stop animating on low battery. The face still updates; it just
+        // stops costing anything to look at.
+        if let b = s.battery, b <= 20, !s.isCharging {
+            animator.animating = false
+        } else if !animator.animating {
+            animator.animating = true
+        }
+    }
+
+    /// Freeze while the display is asleep — nobody is looking, and waking
+    /// the GPU 20 times a second for an invisible ghost is indefensible.
+    private func observePowerAndSleep() {
+        let center = NSWorkspace.shared.notificationCenter
+        center.addObserver(forName: NSWorkspace.screensDidSleepNotification,
+                           object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.animator.animating = false }
+        }
+        center.addObserver(forName: NSWorkspace.screensDidWakeNotification,
+                           object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.animator.animating = true }
+        }
     }
 
     var tint: HeartTint { MoodEngine.tint(for: snapshot) }
@@ -31,8 +56,11 @@ final class BooState: ObservableObject {
     var subtitle: String {
         switch mood {
         case .calm:     "barely doing anything"
-        case .working:  "a few things running"
-        case .strained: "something is working hard"
+        case .working:
+            if let p = snapshot.busiestProcess { "\(p) is busy" } else { "a few things running" }
+        case .strained:
+            if let p = snapshot.busiestProcess { "\(p) is eating everything" }
+            else { "something is working hard" }
         case .tunedIn:  snapshot.outputDevice
         case .sleepy:   "might want a charger soon"
         case .charged:  "plugged in and happy"
@@ -68,10 +96,28 @@ struct BooApp: App {
                   subtitle: state.subtitle,
                   readings: state.readings)
         } label: {
-            Face(mood: state.mood, tint: state.tint,
-                 bodyColor: .primary, voidColor: .clear)
-                .frame(width: 18, height: 18)
+            MenuBarFace(mood: state.mood, tint: state.tint, animator: state.animator)
         }
         .menuBarExtraStyle(.window)
+    }
+}
+
+/// Separate view so it observes the animator itself — the App struct is not
+/// re-evaluated often enough to drive 20fps motion.
+private struct MenuBarFace: View {
+    let mood: Mood
+    let tint: HeartTint
+    @ObservedObject var animator: Animator
+
+    var body: some View {
+        Face(mood: mood,
+             tint: tint,
+             blinking: animator.blinking,
+             gaze: animator.gaze,
+             heartScale: animator.heartScale,
+             bodyColor: .primary,
+             voidColor: .clear)
+            .frame(width: 18, height: 18)
+            .offset(y: animator.float)
     }
 }

@@ -11,6 +11,8 @@ struct Snapshot {
     var isCharging = false
     var outputDevice = "Unknown"
     var isHeadphones = false
+    /// Name of whatever is working hardest, when anything clearly is.
+    var busiestProcess: String? = nil
 }
 
 /// Polls the system. Deliberately a plain class with a timer rather than
@@ -18,6 +20,7 @@ struct Snapshot {
 final class SystemMetrics {
     /// CPU load is a delta between two readings, so the previous one is state.
     private var lastTicks: (user: UInt32, system: UInt32, idle: UInt32, nice: UInt32)?
+    private var topProcess = TopProcess()
 
     func read() -> Snapshot {
         var s = Snapshot()
@@ -30,6 +33,8 @@ final class SystemMetrics {
         let (name, headphones) = readOutputDevice()
         s.outputDevice = name
         s.isHeadphones = headphones
+        // Only worth the scan when something is actually loaded.
+        if s.cpu >= 30 { s.busiestProcess = topProcess.busiest() }
         return s
     }
 
