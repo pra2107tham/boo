@@ -296,8 +296,20 @@ struct DesktopFace: View {
         }
         .frame(width: 220, height: 290)
         .contentShape(InteractiveRegion(editing: editingNote != nil))
-        .onTapGesture(count: 2) { personality.orbitCursor() }
-        .onTapGesture { personality.showerHearts() }
+        // ONE tap gesture, not two. SwiftUI evaluates .onTapGesture
+        // modifiers bottom-up, so a single-tap handler placed after a
+        // double-tap one swallows the click and the double never fires —
+        // which is why double-clicking just showered hearts twice.
+        //
+        // exclusively() tries the double first and only falls back to the
+        // single when no second click arrives.
+        .gesture(
+            TapGesture(count: 2)
+                .onEnded(suppressingRightClick { personality.orbitCursor() })
+                .exclusively(before:
+                    TapGesture()
+                        .onEnded(suppressingRightClick { personality.showerHearts() }))
+        )
         .gesture(dragGesture)
         .onHover(perform: handleHover)
         .onAppear { owner.reportPosition() }
@@ -421,6 +433,19 @@ struct DesktopFace: View {
                 personality.endDrag(velocity: value.velocity)
                 owner.settleAfterDrag()
             }
+    }
+
+    /// True while the right mouse button is down anywhere in this window.
+    ///
+    /// SwiftUI's .contextMenu does not stop the click reaching gestures
+    /// underneath it, so right-clicking opened the menu AND showered
+    /// hearts. Watching the button directly is the reliable way to tell
+    /// the two apart.
+    private func suppressingRightClick(_ action: @escaping () -> Void) -> () -> Void {
+        {
+            guard NSEvent.pressedMouseButtons & 0b10 == 0 else { return }
+            action()
+        }
     }
 
     private func handleHover(_ h: Bool) {

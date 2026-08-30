@@ -175,7 +175,9 @@ final class Personality: ObservableObject {
     /// The laps are the point: a straight there-and-back reads as a
     /// notification, but circling reads as a creature that came to see you.
     func orbitCursor(laps: Int = 3) {
-        guard act == .none || act == .dancing else { return }
+        // Interrupt whatever it was doing. Requiring an idle Boo meant that
+        // after a heart shower the lap silently did nothing.
+        guard act != .squashed, act != .orbiting else { return }
         actResetTask?.cancel()
         orbitTimer?.invalidate()
         act = .orbiting
@@ -239,9 +241,10 @@ final class Personality: ObservableObject {
 
     /// Fly to the cursor, say something, fly home.
     func swoop() {
-        // Never interrupt: no swooping while asleep, dragged, or already
-        // performing. A pet that talks over you is a pet you turn off.
-        guard swoopEnabled, act == .none || act == .dancing else { return }
+        // Automatic swoops still wait for a quiet moment — a pet that talks
+        // over you is one you turn off. Manual ones come through the menu
+        // and interrupt, since you just asked for it.
+        guard swoopEnabled, act != .squashed, act != .orbiting else { return }
         guard Date().timeIntervalSince(lastUserActivity) < 120 else { return }
 
         let mouse = NSEvent.mouseLocation
@@ -414,10 +417,14 @@ final class Personality: ObservableObject {
     // MARK: - Acts
 
     /// Click: a shower of hearts. The one everyone tries first.
+    /// Click for hearts. Re-clicking must always work: it retriggers
+    /// rather than being swallowed by the act still running from last time.
     func showerHearts() {
         noteActivity()
-        set(.hearts, for: 1.6)
-        emit(.heart, count: 12)
+        // Short lock. 1.6s meant a double-click's second half, and any
+        // follow-up action, hit a Boo that was still "doing hearts".
+        set(.hearts, for: 0.7)
+        emit(.heart, count: 10)
     }
 
     /// Rare, deliberately startling, then immediately apologetic.
@@ -524,7 +531,18 @@ final class Personality: ObservableObject {
 
     // MARK: - Particles
 
+    /// Hard ceiling on live particles. Without it, clicking repeatedly
+    /// piles them up unbounded — the swarm grows, the 30fps step loop gets
+    /// slower every click, and the whole thing bogs down.
+    private static let maxParticles = 40
+
     func emit(_ kind: Particle.Kind, count: Int) {
+        // Drop the oldest rather than refusing new ones, so a fresh click
+        // always produces a visible burst.
+        let room = Self.maxParticles - particles.count
+        if room < count {
+            particles.removeFirst(min(particles.count, count - max(room, 0)))
+        }
         for _ in 0..<count {
             particles.append(Particle(
                 x: CGFloat.random(in: -18...18),
