@@ -15,6 +15,14 @@ final class Scratchpad: ObservableObject {
 
     private static let key = "booScratchpadNotes"
 
+    /// Each slot has its own identity, so muscle memory forms — you learn
+    /// that the pin is where the room number lives.
+    static let slots: [(icon: String, name: String)] = [
+        ("pencil",       "Quick note"),
+        ("pin.fill",     "Remember this"),
+        ("link",         "Paste a link or command"),
+    ]
+
     init() {
         let saved = UserDefaults.standard.stringArray(forKey: Self.key) ?? []
         // Always exactly three slots, however the stored value looks.
@@ -30,104 +38,181 @@ final class Scratchpad: ObservableObject {
         notes[index] = ""
     }
 
+    func copy(_ index: Int) {
+        guard notes.indices.contains(index), !notes[index].isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(notes[index], forType: .string)
+    }
+
     var filledCount: Int { notes.filter { !$0.isEmpty }.count }
 }
 
 /// The bubble row that appears under Boo on hover.
+///
+/// Modelled on the docked pill strips that menu-bar tools use: every control
+/// is the SAME fixed-size circle, always. The previous version expanded the
+/// tapped bubble into a 116pt text field, which shoved the other two off the
+/// edge of the window — the editor is a separate floating card now, so the
+/// row itself never moves.
 struct ScratchBubbles: View {
     @ObservedObject var pad: Scratchpad
-    /// Which bubble is open for editing, if any.
     @Binding var editing: Int?
-    /// Staggers the entrance so they pop out one after another.
     let visible: Bool
 
+    /// Fixed forever. Nothing in this row is allowed to resize.
+    private let diameter: CGFloat = 38
+
     var body: some View {
-        HStack(spacing: 9) {
+        HStack(spacing: 10) {
             ForEach(0..<3, id: \.self) { i in
                 Bubble(index: i,
-                       text: $pad.notes[i],
-                       isEditing: editing == i,
+                       text: pad.notes[i],
+                       diameter: diameter,
+                       isActive: editing == i,
                        onTap: { editing = (editing == i) ? nil : i },
+                       onCopy: { pad.copy(i) },
                        onClear: { pad.clear(i) })
-                    .scaleEffect(visible ? 1 : 0.2)
+                    .scaleEffect(visible ? 1 : 0.3)
                     .opacity(visible ? 1 : 0)
                     .animation(
-                        .spring(response: 0.32, dampingFraction: 0.62)
-                            .delay(visible ? Double(i) * 0.05 : 0),
+                        .spring(response: 0.3, dampingFraction: 0.66)
+                            .delay(visible ? Double(i) * 0.04 : 0),
                         value: visible)
             }
         }
     }
 }
 
+/// One pill. Always a circle, always `diameter` across, no exceptions.
 private struct Bubble: View {
     let index: Int
-    @Binding var text: String
-    let isEditing: Bool
+    let text: String
+    let diameter: CGFloat
+    let isActive: Bool
     let onTap: () -> Void
+    let onCopy: () -> Void
     let onClear: () -> Void
 
-    @FocusState private var focused: Bool
     @State private var hovering = false
 
     private var isEmpty: Bool { text.isEmpty }
+    private var slot: (icon: String, name: String) { Scratchpad.slots[index] }
 
     var body: some View {
-        Group {
-            if isEditing {
-                // Opens into a small field. Enter commits, Escape cancels.
-                TextField("note", text: $text)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 11, design: .rounded))
-                    .foregroundStyle(.white)
-                    .focused($focused)
-                    .frame(width: 116)
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 7)
-                    .background(Capsule().fill(Color.black.opacity(0.78)))
-                    .overlay(Capsule().strokeBorder(HeartTint.audio.color.opacity(0.55),
-                                                    lineWidth: 1))
-                    .onSubmit(onTap)
-                    .onAppear { focused = true }
-            } else {
-                Button(action: onTap) {
-                    ZStack {
-                        Circle()
-                            .fill(isEmpty ? Color.white.opacity(hovering ? 0.16 : 0.09)
-                                          : HeartTint.audio.color.opacity(0.9))
-                            .overlay(
-                                Circle().strokeBorder(
-                                    Color.white.opacity(isEmpty ? 0.22 : 0), lineWidth: 1)
-                            )
-                        if isEmpty {
-                            Image(systemName: "plus")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(.white.opacity(0.5))
-                        } else {
-                            // First letter as the glyph, so a filled bubble
-                            // is identifiable at a glance without opening it.
-                            Text(String(text.prefix(1)).uppercased())
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .foregroundStyle(Color.black.opacity(0.75))
-                        }
-                    }
-                    .frame(width: 26, height: 26)
-                    .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .help(isEmpty ? "Jot something down" : text)
-                .onHover { hovering = $0 }
-                // Right-click to empty a bubble without opening it.
-                .contextMenu {
-                    if !isEmpty {
-                        Button("Copy") {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(text, forType: .string)
-                        }
-                        Button("Clear", role: .destructive, action: onClear)
-                    }
+        Button(action: onTap) {
+            ZStack {
+                Circle()
+                    .fill(Color(red: 0.07, green: 0.07, blue: 0.08))
+                    .overlay(
+                        Circle().strokeBorder(borderColor, lineWidth: isActive ? 1.5 : 1)
+                    )
+                    .shadow(color: .black.opacity(0.4), radius: 5, y: 2)
+
+                if isEmpty {
+                    Image(systemName: slot.icon)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.white.opacity(hovering ? 0.85 : 0.55))
+                } else {
+                    // A filled slot shows its first letter, so you can tell
+                    // the three apart without opening any of them.
+                    Text(String(text.prefix(1)).uppercased())
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
                 }
             }
+            .frame(width: diameter, height: diameter)
+            // A filled slot gets a small dot, the way a live indicator works
+            // on a docked strip — visible without reading anything.
+            .overlay(alignment: .topTrailing) {
+                if !isEmpty {
+                    Circle()
+                        .fill(HeartTint.idle.color)
+                        .frame(width: 8, height: 8)
+                        .overlay(Circle().strokeBorder(Color(red: 0.07, green: 0.07,
+                                                             blue: 0.08), lineWidth: 1.5))
+                        .offset(x: 1, y: -1)
+                }
+            }
+            .contentShape(Circle())
         }
+        .buttonStyle(.plain)
+        .help(isEmpty ? slot.name : text)
+        .onHover { h in
+            withAnimation(.easeOut(duration: 0.12)) { hovering = h }
+        }
+        .contextMenu {
+            if !isEmpty {
+                Button("Copy", action: onCopy)
+                Button("Clear", role: .destructive, action: onClear)
+            }
+        }
+    }
+
+    private var borderColor: Color {
+        if isActive { return HeartTint.audio.color.opacity(0.9) }
+        if !isEmpty { return .white.opacity(0.16) }
+        return .white.opacity(hovering ? 0.24 : 0.12)
+    }
+}
+
+/// The editor. A separate floating card, so the bubbles never resize.
+struct ScratchEditor: View {
+    @ObservedObject var pad: Scratchpad
+    let index: Int
+    let onClose: () -> Void
+
+    @FocusState private var focused: Bool
+
+    private var slot: (icon: String, name: String) { Scratchpad.slots[index] }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: slot.icon)
+                    .font(.system(size: 10, weight: .medium))
+                Text(slot.name.uppercased())
+                    .font(.system(size: 9, weight: .semibold))
+                    .tracking(0.9)
+                Spacer(minLength: 10)
+                if !pad.notes[index].isEmpty {
+                    Button { pad.copy(index) } label: {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 10))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Copy")
+                    Button { pad.clear(index) } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 10))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Clear")
+                }
+            }
+            .foregroundStyle(.white.opacity(0.45))
+
+            TextField("", text: $pad.notes[index], axis: .vertical)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12.5, design: .rounded))
+                .foregroundStyle(.white)
+                .lineLimit(1...4)
+                .focused($focused)
+                .onSubmit(onClose)
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 11)
+        .frame(width: 178)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(red: 0.07, green: 0.07, blue: 0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.5), radius: 14, y: 6)
+        .onAppear { focused = true }
+        // Escape closes without needing the mouse.
+        .onExitCommand(perform: onClose)
     }
 }

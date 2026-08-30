@@ -12,7 +12,7 @@ final class DesktopWindow: NSPanel {
     private static let originKey = "desktopBooOrigin"
 
     init(content: NSView) {
-        super.init(contentRect: NSRect(x: 0, y: 0, width: 168, height: 168),
+        super.init(contentRect: NSRect(x: 0, y: 0, width: 480, height: 230),
                    // .nonactivatingPanel keeps your current app focused when
                    // you drag Boo — grabbing the ghost shouldn't steal focus
                    // from whatever you're typing in.
@@ -58,7 +58,7 @@ final class DesktopWindow: NSPanel {
         // resolution change). Fall back to centre rather than stranding it.
         guard NSScreen.screens.contains(where: {
             $0.visibleFrame.intersects(NSRect(origin: point,
-                                              size: CGSize(width: 120, height: 120)))
+                                              size: CGSize(width: 480, height: 230)))
         }) else {
             centerOnScreen()
             return
@@ -106,7 +106,7 @@ final class DesktopBoo: ObservableObject {
         let view = NSHostingView(rootView: DesktopFace(state: state,
                                                        personality: personality,
                                                        owner: self))
-        view.frame = NSRect(x: 0, y: 0, width: 168, height: 168)
+        view.frame = NSRect(x: 0, y: 0, width: 480, height: 230)
         let p = DesktopWindow(content: view)
         p.orderFront(nil)
         panel = p
@@ -118,15 +118,21 @@ final class DesktopBoo: ObservableObject {
         panel = nil
     }
 
-    /// Keep Personality informed of where Boo sits, so cursor tracking
-    /// can work out which way to look.
-    func reportPosition() {
+    /// A borderless panel does not take key status by default, so the note
+    /// field would silently swallow every keystroke. Only ask for it while
+    /// the editor is open — grabbing focus permanently would steal typing
+    /// from whatever you are actually working in.
+    func setAcceptsKeyboard(_ accepts: Bool) {
         guard let p = panel else { return }
-        personality.screenPosition = CGPoint(x: p.frame.midX, y: p.frame.midY)
+        if accepts {
+            p.makeKeyAndOrderFront(nil)
+        } else {
+            p.resignKey()
+        }
     }
 
-    /// Move the window by a delta during a drag. Driven from the gesture so
-    /// there is exactly one thing deciding where the window is.
+    /// Move the window by a delta during a drag, so exactly one thing
+    /// decides where the window is.
     func moveBy(dx: CGFloat, dy: CGFloat) {
         guard let p = panel else { return }
         // Screen y grows upward; gesture y grows downward.
@@ -135,23 +141,20 @@ final class DesktopBoo: ObservableObject {
         personality.screenPosition = CGPoint(x: p.frame.midX, y: p.frame.midY)
     }
 
-    /// Called when a drag ends: save where it landed, and keep it on screen.
+    /// Save where a drag landed, and keep it reachable on screen.
     func settleAfterDrag() {
         guard let p = panel else { return }
-        // A window dragged mostly off-screen is unrecoverable, so nudge it
-        // back until at least most of it is visible.
-        if let visible = NSScreen.screens.first(where: {
-            $0.frame.intersects(p.frame)
-        })?.visibleFrame {
+        if let visible = NSScreen.screens.first(where: { $0.frame.intersects(p.frame) })?
+            .visibleFrame {
             var origin = p.frame.origin
-            let margin: CGFloat = 30
+            let margin: CGFloat = 40
             origin.x = min(max(origin.x, visible.minX - margin),
                            visible.maxX - p.frame.width + margin)
             origin.y = min(max(origin.y, visible.minY - margin),
                            visible.maxY - p.frame.height + margin)
             if origin != p.frame.origin {
                 NSAnimationContext.runAnimationGroup { ctx in
-                    ctx.duration = 0.28
+                    ctx.duration = 0.26
                     ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
                     p.animator().setFrameOrigin(origin)
                 }
@@ -160,6 +163,13 @@ final class DesktopBoo: ObservableObject {
         UserDefaults.standard.set(NSStringFromPoint(p.frame.origin),
                                   forKey: "desktopBooOrigin")
         reportPosition()
+    }
+
+    /// Keep Personality informed of where Boo sits, so cursor tracking
+    /// can work out which way to look.
+    func reportPosition() {
+        guard let p = panel else { return }
+        personality.screenPosition = CGPoint(x: p.frame.midX, y: p.frame.midY)
     }
 
     /// Fly the window to a point, or back to where the user parked it.
@@ -187,6 +197,29 @@ final class DesktopBoo: ObservableObject {
     }
 }
 
+/// The clickable parts of the panel. The frame is much wider than the ghost
+/// so the editor card has somewhere to live, and the empty space must not
+/// steal clicks from whatever is behind it.
+private struct InteractiveRegion: Shape {
+    let editing: Bool
+
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let cx = rect.midX, cy = rect.midY
+        // Ghost, offset up by 14 to match its rendered position.
+        p.addEllipse(in: CGRect(x: cx - 56, y: cy - 78, width: 112, height: 112))
+        // Bubble row
+        p.addRoundedRect(in: CGRect(x: cx - 73, y: cy + 33, width: 146, height: 50),
+                         cornerSize: CGSize(width: 25, height: 25))
+        // Editor card, only while it is open
+        if editing {
+            p.addRoundedRect(in: CGRect(x: cx + 43, y: cy + 5, width: 190, height: 102),
+                             cornerSize: CGSize(width: 14, height: 14))
+        }
+        return p
+    }
+}
+
 /// What actually renders in the floating panel. Bigger than the menu bar
 /// version, and it keeps its colours — no template-image tinting here.
 struct DesktopFace: View {
@@ -194,13 +227,14 @@ struct DesktopFace: View {
     @ObservedObject var animator: Animator
     @ObservedObject var personality: Personality
     let owner: DesktopBoo
+
     @State private var hovering = false
     @State private var hoverStart: Date?
     @State private var bubblePhase: Double = 0
-    @State private var lastDrag: CGPoint = .zero
-    @State private var editingNote: Int?
     @State private var wobble: Double = 0
     @State private var hop: CGFloat = 0
+    @State private var lastDrag: CGPoint = .zero
+    @State private var editingNote: Int?
 
     init(state: BooState, personality: Personality, owner: DesktopBoo) {
         self.state = state
@@ -209,171 +243,175 @@ struct DesktopFace: View {
         self.owner = owner
     }
 
-    /// Acts that should suppress the mood's own expression.
     private var effectiveMood: Mood {
-        switch personality.act {
-        case .sleeping: return .sleepy
-        default: return state.mood
-        }
+        personality.act == .sleeping ? .sleepy : state.mood
     }
+
+    private var bubblesShown: Bool { hovering || editingNote != nil }
 
     var body: some View {
         ZStack {
-            Face(mood: effectiveMood,
-                 tint: state.tint,
-                 blinking: animator.blinking,
-                 gaze: personality.lookX,
-                 gazeY: personality.lookY,
-                 act: personality.act,
-                 heartScale: animator.heartScale,
-                 voidColor: Color(red: 0.05, green: 0.05, blue: 0.06))
-                .frame(width: 96, height: 96)
-                // Squash on drag, stretch on a yawn.
-                .scaleEffect(x: (2 - personality.squash) / personality.stretch,
-                             y: personality.squash * personality.stretch,
-                             anchor: .bottom)
-                .rotationEffect(.degrees(personality.danceAngle + wobble
-                                         + personality.dragTilt), anchor: .bottom)
-                .scaleEffect(personality.scale)
-                .rotation3DEffect(.degrees(personality.spin), axis: (x: 0, y: 1, z: 0))
-                .offset(y: animator.float * 3 + hop)
-                .shadow(color: .black.opacity(0.28), radius: 10, y: 5)
-
-            if personality.act == .orbiting {
-                OrbitTrail(points: personality.trail)
-                    .frame(width: 120, height: 120)
-            }
-
-            ParticleLayer(particles: personality.particles)
-                .frame(width: 120, height: 120)
-
-            // Thought cloud with the source app's icon while music plays.
-            if state.mood == .tunedIn {
-                ThoughtBubble(appName: state.snapshot.audioSource, phase: bubblePhase)
-                    .offset(x: 42, y: -40)
-                    .transition(.scale(scale: 0.7).combined(with: .opacity))
-            }
-
-            // What Boo says when it swoops over.
-            if let line = personality.speech {
-                Text(line)
-                    .font(.system(size: 12, weight: .semibold, design: .serif))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 7)
-                    .background(Color.black.opacity(0.72), in: Capsule())
-                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
-                    .fixedSize()
-                    .offset(y: -56)
-                    .transition(.scale(scale: 0.8).combined(with: .opacity))
-            }
-
-            // Scratchpad bubbles slide out below on hover.
-            ScratchBubbles(pad: owner.scratchpad,
-                           editing: $editingNote,
-                           visible: hovering || editingNote != nil)
-                .offset(y: 52)
-
-            if hovering, personality.act != .sleeping, editingNote == nil {
-                Text(bubbleText)
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(.regularMaterial, in: Capsule())
-                    .offset(y: -54)
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
-            }
+            ghost
+            trail
+            particles
+            thoughtCloud
+            speechBubble
+            bubbleRow
+            editorCard
         }
-        .frame(width: 168, height: 168)
-        .contentShape(Rectangle())
-        // Click for hearts — the first thing anyone tries.
+        .frame(width: 480, height: 230)
+        .contentShape(InteractiveRegion(editing: editingNote != nil))
         .onTapGesture(count: 2) { personality.orbitCursor() }
         .onTapGesture { personality.showerHearts() }
-        // One gesture drives both the window position and the squash, so
-        // nothing competes for the same events.
-        .gesture(
-            DragGesture(minimumDistance: 2, coordinateSpace: .global)
-                .onChanged { value in
-                    if personality.act != .squashed { personality.beginDrag() }
-                    // Move by the delta since the last frame, not from the
-                    // start, so the window tracks the pointer exactly.
-                    let dx = value.location.x - lastDrag.x
-                    let dy = value.location.y - lastDrag.y
-                    if lastDrag != .zero { owner.moveBy(dx: dx, dy: dy) }
-                    lastDrag = value.location
-                    personality.dragging(velocity: value.velocity)
-                }
-                .onEnded { value in
-                    lastDrag = .zero
-                    personality.endDrag(velocity: value.velocity)
-                    owner.settleAfterDrag()
-                }
-        )
-        .onHover { h in
-            withAnimation(.easeOut(duration: 0.15)) { hovering = h }
-            if h {
-                hoverStart = Date()
-                personality.noteActivity()
-                // Linger and it counts as petting.
-                Task { @MainActor in
-                    try? await Task.sleep(for: .seconds(2))
-                    if hovering, let start = hoverStart,
-                       Date().timeIntervalSince(start) >= 1.9 {
-                        personality.pet()
-                    }
-                }
-            } else {
-                hoverStart = nil
-            }
-        }
+        .gesture(dragGesture)
+        .onHover(perform: handleHover)
         .onAppear { owner.reportPosition() }
-        // Fly to the pointer when a swoop starts, and home when it ends.
+        .onChange(of: editingNote) { _, value in
+            // A borderless panel needs key status before it can receive typing.
+            owner.setAcceptsKeyboard(value != nil)
+        }
         .onChange(of: personality.swoopTarget) { _, target in
             owner.flyTo(target)
         }
-        // Local animation clock for the bubble and the jelly antics.
-        .task {
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(60))
-                bubblePhase += 0.09
-                switch personality.act {
-                case .wobbling: wobble = sin(bubblePhase * 4) * 7
-                case .bouncing: hop = -abs(sin(bubblePhase * 3)) * 10
-                case .sneezing: hop = sin(bubblePhase * 9) * 3
-                default:
-                    if wobble != 0 { wobble *= 0.8; if abs(wobble) < 0.1 { wobble = 0 } }
-                    if hop != 0 { hop *= 0.8; if abs(hop) < 0.1 { hop = 0 } }
-                }
-            }
-        }
+        .task { await animationClock() }
         .contextMenu {
             Text(state.mood.headline)
             Divider()
-            Button("Give me a fright") { personality.scare() }
-            Button("Shower hearts") { personality.showerHearts() }
-            Button("Come tell me to focus") { personality.swoop() }
             Button("Do a lap around my cursor") { personality.orbitCursor() }
+            Button("Come tell me to focus") { personality.swoop() }
+            Button("Shower hearts") { personality.showerHearts() }
+            Button("Give me a fright") { personality.scare() }
             Divider()
             Button("Hide desktop Boo") { owner.isVisible = false }
             Button("Quit Boo") { NSApplication.shared.terminate(nil) }
         }
-        .help("Drag me anywhere · click for hearts")
     }
 
-    private var bubbleText: String {
-        switch personality.act {
-        case .hearts, .petted: "hehe"
-        case .scared:          "BOO!"
-        case .giggling:        "got you"
-        case .dancing:         "this one slaps"
-        case .celebrating:     "we did it"
-        case .squashed:        "wheee"
-        case .yawning:         "hhhaaaah"
-        case .sneezing:        "atchoo"
-        case .stargazing:      "pretty"
-        case .spinning:        "wheee"
-        case .orbiting:        "zoom"
-        default:               state.mood.headline
+    // MARK: - Pieces
+
+    private var ghost: some View {
+        Face(mood: effectiveMood,
+             tint: state.tint,
+             blinking: animator.blinking,
+             gaze: personality.lookX,
+             gazeY: personality.lookY,
+             act: personality.act,
+             heartScale: animator.heartScale,
+             voidColor: Color(red: 0.05, green: 0.05, blue: 0.06))
+            .frame(width: 96, height: 96)
+            .scaleEffect(x: (2 - personality.squash) / personality.stretch,
+                         y: personality.squash * personality.stretch,
+                         anchor: .bottom)
+            .rotationEffect(.degrees(personality.danceAngle + wobble
+                                     + personality.dragTilt), anchor: .bottom)
+            .rotation3DEffect(.degrees(personality.spin), axis: (x: 0, y: 1, z: 0))
+            .scaleEffect(personality.scale)
+            .offset(y: animator.float * 3 + hop - 14)
+            .shadow(color: .black.opacity(0.28), radius: 10, y: 5)
+    }
+
+    @ViewBuilder
+    private var trail: some View {
+        if personality.act == .orbiting {
+            OrbitTrail(points: personality.trail)
+                .frame(width: 120, height: 120)
+                .offset(y: -14)
+        }
+    }
+
+    private var particles: some View {
+        ParticleLayer(particles: personality.particles)
+            .frame(width: 120, height: 120)
+            .offset(y: -14)
+    }
+
+    @ViewBuilder
+    private var thoughtCloud: some View {
+        if state.mood == .tunedIn {
+            ThoughtBubble(appName: state.snapshot.audioSource, phase: bubblePhase)
+                .offset(x: 46, y: -54)
+        }
+    }
+
+    @ViewBuilder
+    private var speechBubble: some View {
+        if let line = personality.speech, editingNote == nil {
+            Text(line)
+                .font(.system(size: 12, weight: .semibold, design: .serif))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 7)
+                .background(Color.black.opacity(0.72), in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
+                .fixedSize()
+                .offset(y: -70)
+                .transition(.scale(scale: 0.8).combined(with: .opacity))
+        }
+    }
+
+    private var bubbleRow: some View {
+        ScratchBubbles(pad: owner.scratchpad,
+                       editing: $editingNote,
+                       visible: bubblesShown)
+            .offset(y: 58)
+    }
+
+    @ViewBuilder
+    private var editorCard: some View {
+        if let i = editingNote {
+            ScratchEditor(pad: owner.scratchpad, index: i) { editingNote = nil }
+                .offset(x: 138, y: 56)
+                .transition(.scale(scale: 0.9, anchor: .leading).combined(with: .opacity))
+        }
+    }
+
+    // MARK: - Interaction
+
+    private var dragGesture: some Gesture {
+        DragGesture(minimumDistance: 2, coordinateSpace: .global)
+            .onChanged { value in
+                if personality.act != .squashed { personality.beginDrag() }
+                let dx = value.location.x - lastDrag.x
+                let dy = value.location.y - lastDrag.y
+                if lastDrag != .zero { owner.moveBy(dx: dx, dy: dy) }
+                lastDrag = value.location
+                personality.dragging(velocity: value.velocity)
+            }
+            .onEnded { value in
+                lastDrag = .zero
+                personality.endDrag(velocity: value.velocity)
+                owner.settleAfterDrag()
+            }
+    }
+
+    private func handleHover(_ h: Bool) {
+        withAnimation(.easeOut(duration: 0.16)) { hovering = h }
+        guard h else { hoverStart = nil; return }
+        hoverStart = Date()
+        personality.noteActivity()
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            if hovering, let start = hoverStart,
+               Date().timeIntervalSince(start) >= 1.9, editingNote == nil {
+                personality.pet()
+            }
+        }
+    }
+
+    /// Local clock for the bubble bob and the jelly antics.
+    private func animationClock() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .milliseconds(60))
+            bubblePhase += 0.09
+            switch personality.act {
+            case .wobbling: wobble = sin(bubblePhase * 4) * 7
+            case .bouncing: hop = -abs(sin(bubblePhase * 3)) * 10
+            case .sneezing: hop = sin(bubblePhase * 9) * 3
+            default:
+                if wobble != 0 { wobble *= 0.8; if abs(wobble) < 0.1 { wobble = 0 } }
+                if hop != 0 { hop *= 0.8; if abs(hop) < 0.1 { hop = 0 } }
+            }
         }
     }
 }
+
