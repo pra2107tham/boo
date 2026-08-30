@@ -104,3 +104,78 @@ struct OrbitTrail: View {
         .allowsHitTesting(false)
     }
 }
+
+/// The door Boo hides behind when it peeks.
+///
+/// The sliding was never the problem — there was nothing to hide BEHIND, so
+/// a ghost drifting sideways just looked lost. A door gives the movement a
+/// reason, and it is the difference between "peeking" and "wandering off".
+struct PeekDoor: View {
+    /// 0 = absent, 1 = fully there.
+    let open: CGFloat
+    /// Which side of Boo the door stands on.
+    let fromLeft: Bool
+
+    /// Door size and gap, shared with the mask so the two cannot drift
+    /// apart — they were computed separately before, which is exactly how
+    /// Boo ended up clipped in one place and the door drawn in another.
+    /// As wide as Boo, or he cannot be hidden by it — a 74pt door could
+    /// never cover a 96pt ghost however far he slid.
+    static let width: CGFloat = 96
+    static let height: CGFloat = 112
+
+    /// Where the door's INNER edge sits, relative to the view centre.
+    /// Boo spans -48...+48 at rest, so -56 puts the door fully clear of
+    /// him until he moves. Anything closer means he starts out already
+    /// half-covered, which reads as broken rather than as hiding.
+    static let innerEdge: CGFloat = 56
+
+    /// Horizontal centre of the door relative to the view centre.
+    static func centreX(fromLeft: Bool) -> CGFloat {
+        (fromLeft ? -1 : 1) * (innerEdge + width / 2)
+    }
+
+    var body: some View {
+        Canvas { ctx, size in
+            guard open > 0.01 else { return }
+            let w = Self.width, h = Self.height
+            // Sits beside Boo, on the side it ducks toward.
+            let x = size.width / 2 + Self.centreX(fromLeft: fromLeft) - w / 2
+            let y = size.height / 2 - h / 2
+
+            ctx.opacity = Double(open)
+            // Swing in from the hinge side rather than fading in flat.
+            let swing = 0.35 + 0.65 * open
+            let panel = CGRect(x: fromLeft ? x + w * (1 - swing) : x,
+                               y: y, width: w * swing, height: h)
+
+            // Frame
+            let frame = Path(roundedRect: panel.insetBy(dx: -3, dy: -3),
+                             cornerRadius: 4)
+            ctx.fill(frame, with: .color(Color(red: 0.16, green: 0.13, blue: 0.11)))
+
+            // Door face
+            let door = Path(roundedRect: panel, cornerRadius: 2)
+            ctx.fill(door, with: .color(Color(red: 0.42, green: 0.29, blue: 0.20)))
+
+            // Two recessed panels, so it reads as a door and not a plank.
+            if swing > 0.6 {
+                let inset = panel.insetBy(dx: panel.width * 0.16, dy: 12)
+                for i in 0..<2 {
+                    let ph = (inset.height - 8) / 2
+                    let r = CGRect(x: inset.minX, y: inset.minY + CGFloat(i) * (ph + 8),
+                                   width: inset.width, height: ph)
+                    ctx.stroke(Path(roundedRect: r, cornerRadius: 2),
+                               with: .color(Color(red: 0.30, green: 0.20, blue: 0.13)),
+                               lineWidth: 1.5)
+                }
+                // Handle on the opening edge.
+                let hx = fromLeft ? panel.minX + 8 : panel.maxX - 8
+                ctx.fill(Path(ellipseIn: CGRect(x: hx - 2.5, y: panel.midY - 2.5,
+                                                width: 5, height: 5)),
+                         with: .color(Color(red: 0.85, green: 0.72, blue: 0.42)))
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}

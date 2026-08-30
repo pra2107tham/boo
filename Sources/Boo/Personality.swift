@@ -86,6 +86,12 @@ final class Personality: ObservableObject {
     @Published private(set) var squash: CGFloat = 1
     /// Lean angle while being dragged, degrees.
     @Published private(set) var dragTilt: Double = 0
+    /// 0 = no door, 1 = door fully there. Drives the thing Boo hides behind.
+    @Published private(set) var doorOpen: CGFloat = 0
+    /// How far Boo has ducked behind the door edge.
+    @Published private(set) var peekSlide: CGFloat = 0
+    /// Which side the door is on, so the visible eye is the far one.
+    @Published private(set) var peekFromLeft = false
     @Published private(set) var danceAngle: CGFloat = 0
 
     /// Set by the desktop window so cursor tracking knows where Boo is.
@@ -175,7 +181,9 @@ final class Personality: ObservableObject {
     /// The laps are the point: a straight there-and-back reads as a
     /// notification, but circling reads as a creature that came to see you.
     func orbitCursor(laps: Int = 3) {
-        guard act == .none || act == .dancing else { return }
+        // Interrupt whatever it was doing. Requiring an idle Boo meant that
+        // after a heart shower the lap silently did nothing.
+        guard act != .squashed, act != .orbiting else { return }
         actResetTask?.cancel()
         orbitTimer?.invalidate()
         act = .orbiting
@@ -239,9 +247,10 @@ final class Personality: ObservableObject {
 
     /// Fly to the cursor, say something, fly home.
     func swoop() {
-        // Never interrupt: no swooping while asleep, dragged, or already
-        // performing. A pet that talks over you is a pet you turn off.
-        guard swoopEnabled, act == .none || act == .dancing else { return }
+        // Automatic swoops still wait for a quiet moment — a pet that talks
+        // over you is one you turn off. Manual ones come through the menu
+        // and interrupt, since you just asked for it.
+        guard swoopEnabled, act != .squashed, act != .orbiting else { return }
         guard Date().timeIntervalSince(lastUserActivity) < 120 else { return }
 
         let mouse = NSEvent.mouseLocation
@@ -345,7 +354,7 @@ final class Personality: ObservableObject {
             guard let me = self else { return }
             Task { @MainActor in
                 guard me.scaresEnabled else { return }
-                if me.act == .none { me.scare() }
+                if me.act == .none { me.peek() }
                 me.scheduleScare()
             }
         }
@@ -414,27 +423,62 @@ final class Personality: ObservableObject {
     // MARK: - Acts
 
     /// Click: a shower of hearts. The one everyone tries first.
+    /// Click for hearts. Re-clicking must always work: it retriggers
+    /// rather than being swallowed by the act still running from last time.
     func showerHearts() {
         noteActivity()
-        set(.hearts, for: 1.6)
-        emit(.heart, count: 12)
+        // Short lock. 1.6s meant a double-click's second half, and any
+        // follow-up action, hit a Boo that was still "doing hearts".
+        set(.hearts, for: 0.7)
+        emit(.heart, count: 10)
     }
 
     /// Rare, deliberately startling, then immediately apologetic.
-    func scare() {
+    /// Peek out from behind the nearest screen edge, then duck back.
+    ///
+    /// Replaces the old jump scare. A scare is startling once and irritating
+    /// every time after, and it fired while you were concentrating — the
+    /// worst possible moment. Peeking is the same mischief without the
+    /// adrenaline: it slides mostly off-screen, shows one eye, and hides.
+    func peek() {
+        guard act != .squashed, act != .orbiting else { return }
         noteActivity()
-        act = .scared
         actResetTask?.cancel()
+        act = .peeking
+        // A door appears beside Boo and it ducks behind it. The sliding was
+        // never the problem — there was simply nothing to hide BEHIND, so
+        // it read as a ghost drifting off into empty space.
+        peekFromLeft = Bool.random()
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.8)) {
+            doorOpen = 1
+        }
         actResetTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(700))
+            // Door swings in, then Boo slips behind its edge.
+            try? await Task.sleep(for: .milliseconds(280))
             guard !Task.isCancelled else { return }
-            act = .giggling          // it laughs at you afterwards
-            emit(.star, count: 6)
-            try? await Task.sleep(for: .milliseconds(1400))
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
+                // Toward the door, not away from it. A door on the left
+                // means Boo moves left (negative x).
+                // 70pt: far enough to end up genuinely behind the door,
+                // leaving ~34pt of him peeking past its inner edge.
+                peekSlide = peekFromLeft ? -70 : 70
+            }
+            try? await Task.sleep(for: .milliseconds(1700))
             guard !Task.isCancelled else { return }
-            act = .none
+            // Back out, then the door closes behind it.
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.7)) { peekSlide = 0 }
+            try? await Task.sleep(for: .milliseconds(340))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.3)) { doorOpen = 0 }
+            try? await Task.sleep(for: .milliseconds(320))
+            guard !Task.isCancelled else { return }
+            if act == .peeking { act = .none }
         }
     }
+
+
+    /// Kept so the menu item and any existing callers still work.
+    func scare() { peek() }
 
     /// Hovering long enough reads as petting.
     func pet() {
@@ -524,7 +568,18 @@ final class Personality: ObservableObject {
 
     // MARK: - Particles
 
+    /// Hard ceiling on live particles. Without it, clicking repeatedly
+    /// piles them up unbounded — the swarm grows, the 30fps step loop gets
+    /// slower every click, and the whole thing bogs down.
+    private static let maxParticles = 40
+
     func emit(_ kind: Particle.Kind, count: Int) {
+        // Drop the oldest rather than refusing new ones, so a fresh click
+        // always produces a visible burst.
+        let room = Self.maxParticles - particles.count
+        if room < count {
+            particles.removeFirst(min(particles.count, count - max(room, 0)))
+        }
         for _ in 0..<count {
             particles.append(Particle(
                 x: CGFloat.random(in: -18...18),

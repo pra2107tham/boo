@@ -198,8 +198,8 @@ struct Panel: View {
                     help: "Let Boo float on your desktop",
                     isOn: $desktop.isVisible)
             Toggle3(icon: "theatermasks.fill",
-                    name: "Spooky",
-                    help: "Boo startles you once in a while",
+                    name: "Peekaboo",
+                    help: "Boo hides behind a screen edge now and then",
                     isOn: Binding(get: { personality.scaresEnabled },
                                   set: { personality.scaresEnabled = $0 }))
             Toggle3(icon: "bell.fill",

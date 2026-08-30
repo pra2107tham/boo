@@ -44,6 +44,9 @@ struct Face: View {
     var gazeY: CGFloat = 0       // -1 up … 0 level … +1 down
     /// A momentary performance layered over the mood.
     var act: Act = .none
+    /// While peeking: true when hiding behind the LEFT edge, so the visible
+    /// eye is the one facing the middle of the screen.
+    var peekFromLeft = false
     var heartScale: CGFloat = 1
     var bodyColor = Color(red: 0.969, green: 0.957, blue: 0.925)  // #F7F4EC
     /// Colour painted into the eyes when not punching through. Only used
@@ -204,9 +207,11 @@ struct Face: View {
             }
             return
         case .peeking:
-            // Only one eye showing — the other is behind the screen edge.
-            let r = CGRect(x: (rx - 4.3) * s, y: (y - 4.6) * s,
-                           width: 8.6 * s, height: 9.2 * s)
+            // One eye, on the side facing the screen — the other is behind
+            // the edge. Slightly wide, because it is watching you.
+            let cx = peekFromLeft ? rx : lx
+            let r = CGRect(x: (cx - 4.6) * s, y: (y - 5) * s,
+                           width: 9.2 * s, height: 10 * s)
             ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
             return
         case .orbiting:

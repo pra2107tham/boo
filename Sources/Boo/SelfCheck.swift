@@ -143,6 +143,20 @@ enum SelfCheck {
             UserDefaults.standard.removeObject(forKey: "booScratchpadNotes")
         }
 
+        // Rapid clicking must not pile up particles without bound. This is
+        // what made Boo bog down and stop responding: every click added 12
+        // more to a swarm that was already being stepped 30 times a second.
+        MainActor.assumeIsolated {
+            let spam = Personality()
+            for _ in 0..<25 { spam.showerHearts() }
+            assert(spam.particles.count <= 40,
+                   "particle swarm must stay capped, got \(spam.particles.count)")
+            // And they must still all expire afterwards.
+            for _ in 0..<80 { spam.stepParticlesForTesting() }
+            assert(spam.particles.isEmpty,
+                   "capped particles must still expire, \(spam.particles.count) left")
+        }
+
         print("self-check passed")
         exit(0)
     }
