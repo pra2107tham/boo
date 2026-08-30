@@ -86,9 +86,12 @@ final class Personality: ObservableObject {
     @Published private(set) var squash: CGFloat = 1
     /// Lean angle while being dragged, degrees.
     @Published private(set) var dragTilt: Double = 0
-    /// Set while Boo wants the window moved to a screen edge to hide.
-    /// nil means "come back to where you were parked".
-    @Published private(set) var hideRequest: Edge?
+    /// 0 = no door, 1 = door fully there. Drives the thing Boo hides behind.
+    @Published private(set) var doorOpen: CGFloat = 0
+    /// How far Boo has ducked behind the door edge.
+    @Published private(set) var peekSlide: CGFloat = 0
+    /// Which side the door is on, so the visible eye is the far one.
+    @Published private(set) var peekFromLeft = false
     @Published private(set) var danceAngle: CGFloat = 0
 
     /// Set by the desktop window so cursor tracking knows where Boo is.
@@ -442,39 +445,33 @@ final class Personality: ObservableObject {
         noteActivity()
         actResetTask?.cancel()
         act = .peeking
-        // Hiding means the WINDOW goes to a screen edge. Sliding the ghost
-        // inside its own window just moved it around in empty space, which
-        // is why it read as a one-eyed ghost sitting in the open rather
-        // than something hiding behind anything.
-        hideRequest = nearestEdge()
+        // A door appears beside Boo and it ducks behind it. The sliding was
+        // never the problem — there was simply nothing to hide BEHIND, so
+        // it read as a ghost drifting off into empty space.
+        peekFromLeft = Bool.random()
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.8)) {
+            doorOpen = 1
+        }
         actResetTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(2100))
+            // Door swings in, then Boo slips behind its edge.
+            try? await Task.sleep(for: .milliseconds(280))
             guard !Task.isCancelled else { return }
-            hideRequest = nil          // come back out
-            try? await Task.sleep(for: .milliseconds(650))
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
+                peekSlide = peekFromLeft ? 38 : -38
+            }
+            try? await Task.sleep(for: .milliseconds(1700))
+            guard !Task.isCancelled else { return }
+            // Back out, then the door closes behind it.
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.7)) { peekSlide = 0 }
+            try? await Task.sleep(for: .milliseconds(340))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.3)) { doorOpen = 0 }
+            try? await Task.sleep(for: .milliseconds(320))
             guard !Task.isCancelled else { return }
             if act == .peeking { act = .none }
         }
     }
 
-    /// Which screen edge Boo is closest to, so it hides behind the nearest
-    /// one rather than crossing the whole display to get somewhere.
-    private func nearestEdge() -> Edge {
-        guard let screen = NSScreen.screens.first(where: {
-            $0.frame.contains(screenPosition)
-        }) ?? NSScreen.main else { return .right }
-        let f = screen.visibleFrame
-        let distances: [(Edge, CGFloat)] = [
-            (.left,   screenPosition.x - f.minX),
-            (.right,  f.maxX - screenPosition.x),
-            (.bottom, screenPosition.y - f.minY),
-        ]
-        return distances.min(by: { $0.1 < $1.1 })?.0 ?? .right
-    }
-
-    /// Which way Boo is peeking from, so the visible eye is the one nearer
-    /// the middle of the screen.
-    enum Edge { case left, right, bottom }
 
     /// Kept so the menu item and any existing callers still work.
     func scare() { peek() }
