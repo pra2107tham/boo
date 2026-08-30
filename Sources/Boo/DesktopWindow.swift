@@ -197,7 +197,13 @@ final class DesktopBoo: ObservableObject {
 
     /// Fly the window to a point, or back to where the user parked it.
     /// The saved origin is untouched, so a swoop never loses their spot.
-    func flyTo(_ target: CGPoint?) {
+    /// Move the window toward a point.
+    ///
+    /// `animated: false` matters for the orbit, which updates the target 60
+    /// times a second. Animating each step restarted an 0.85s animation on
+    /// every frame, so each one was cancelled before it travelled anywhere
+    /// and the window just shivered in place instead of lapping the cursor.
+    func flyTo(_ target: CGPoint?, animated: Bool = true) {
         guard let p = panel else { return }
         let destination: CGPoint
         if let t = target {
@@ -207,6 +213,12 @@ final class DesktopBoo: ObservableObject {
             guard let saved = UserDefaults.standard.string(forKey: "desktopBooOrigin")
             else { return }
             destination = NSPointFromString(saved)
+        }
+        guard animated else {
+            // Per-frame positioning: set it directly, no animation to cancel.
+            p.setFrameOrigin(destination)
+            personality.screenPosition = CGPoint(x: p.frame.midX, y: p.frame.midY)
+            return
         }
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.85
@@ -295,7 +307,8 @@ struct DesktopFace: View {
             if value != nil { owner.ensureRoomForEditor() }
         }
         .onChange(of: personality.swoopTarget) { _, target in
-            owner.flyTo(target)
+            // The orbit drives position per frame; everything else animates.
+            owner.flyTo(target, animated: personality.act != .orbiting)
         }
         .task { await animationClock() }
         .contextMenu {

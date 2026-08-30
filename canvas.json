@@ -1,13 +1,14 @@
 {
   "artboards": [
-    { "file": "Popover.dc.html", "x": 0,    "y": 0,    "w": 980, "h": 1180, "title": "Panel — redrawn" },
-    { "file": "Audio.dc.html",   "x": 1080, "y": 0,    "w": 980, "h": 1080, "title": "Audio fix" },
-    { "file": "Main.dc.html",    "x": 2160, "y": 0,    "w": 900, "h": 1000, "title": "Boo — character" },
-    { "file": "Spec.dc.html",    "x": 3160, "y": 0,    "w": 900, "h": 1080, "title": "Build spec" }
+    { "file": "Behaviours.dc.html", "x": 0,    "y": 0, "w": 1000, "h": 1560, "title": "Behaviours" },
+    { "file": "Popover.dc.html",    "x": 1100, "y": 0, "w": 980,  "h": 1180, "title": "Panel" },
+    { "file": "Audio.dc.html",      "x": 2180, "y": 0, "w": 980,  "h": 1080, "title": "Audio fix" },
+    { "file": "Main.dc.html",       "x": 3260, "y": 0, "w": 900,  "h": 1000, "title": "Character" },
+    { "file": "Spec.dc.html",       "x": 4260, "y": 0, "w": 900,  "h": 1080, "title": "Build spec" }
   ],
   "annotations": [
-    { "id": "brief", "x": 0, "y": -230, "w": 780, "text": "Boo — panel redesign + the audio fix\n\nTwo problems, both here as design before any code.\n\nLEFT: the panel redrawn. Blurred mood-coloured bloom behind dark glass, editorial serif for the sentence, tabular mono for the numbers. Three figures side by side instead of four stacked rows.\n\nRIGHT: why it always thinks music is playing, diagnosed on your machine, plus every edge case the fix has to handle." },
-    { "id": "no-code", "x": 1080, "y": -100, "w": 420, "text": "Diagnosed, not yet built — say go and I write it." }
+    { "id": "brief", "x": 0, "y": -230, "w": 780,
+      "text": "Boo — behaviours\n\nThe typing pose you asked for, the three broken behaviours redone, and six more things it could do.\n\nThe orbit bug is already fixed in code: it set a new target 60x/sec and each one cancelled the last animation before it moved, so it shivered instead of lapping. Everything else here is design only — say which you want and I build them." }
   ],
   "launch": { "view": "canvas" }
 }
