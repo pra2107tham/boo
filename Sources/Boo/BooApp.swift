@@ -128,6 +128,7 @@ struct BooApp: App {
                   tint: state.tint,
                   subtitle: state.subtitle,
                   readings: state.readings,
+                  audioSource: state.snapshot.audioSource,
                   desktop: desktop,
                   personality: state.personality)
         } label: {

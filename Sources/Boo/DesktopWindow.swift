@@ -120,6 +120,30 @@ final class DesktopBoo: ObservableObject {
         guard let p = panel else { return }
         personality.screenPosition = CGPoint(x: p.frame.midX, y: p.frame.midY)
     }
+
+    /// Fly the window to a point, or back to where the user parked it.
+    /// The saved origin is untouched, so a swoop never loses their spot.
+    func flyTo(_ target: CGPoint?) {
+        guard let p = panel else { return }
+        let destination: CGPoint
+        if let t = target {
+            destination = CGPoint(x: t.x - p.frame.width / 2,
+                                  y: t.y - p.frame.height / 2)
+        } else {
+            guard let saved = UserDefaults.standard.string(forKey: "desktopBooOrigin")
+            else { return }
+            destination = NSPointFromString(saved)
+        }
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.85
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            p.animator().setFrameOrigin(destination)
+        }
+        // Report where it lands so gaze keeps working mid-flight.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { [weak self] in
+            self?.reportPosition()
+        }
+    }
 }
 
 /// What actually renders in the floating panel. Bigger than the menu bar
@@ -131,6 +155,9 @@ struct DesktopFace: View {
     let owner: DesktopBoo
     @State private var hovering = false
     @State private var hoverStart: Date?
+    @State private var bubblePhase: Double = 0
+    @State private var wobble: Double = 0
+    @State private var hop: CGFloat = 0
 
     init(state: BooState, personality: Personality, owner: DesktopBoo) {
         self.state = state
@@ -158,15 +185,38 @@ struct DesktopFace: View {
                  heartScale: animator.heartScale,
                  voidColor: Color(red: 0.05, green: 0.05, blue: 0.06))
                 .frame(width: 96, height: 96)
-                // Squash on drag, sway when dancing, float when idle.
-                .scaleEffect(x: 2 - personality.squash, y: personality.squash,
+                // Squash on drag, stretch on a yawn.
+                .scaleEffect(x: (2 - personality.squash) / personality.stretch,
+                             y: personality.squash * personality.stretch,
                              anchor: .bottom)
-                .rotationEffect(.degrees(personality.danceAngle), anchor: .bottom)
-                .offset(y: animator.float * 3)
+                .rotationEffect(.degrees(personality.danceAngle + wobble), anchor: .bottom)
+                .rotation3DEffect(.degrees(personality.spin), axis: (x: 0, y: 1, z: 0))
+                .offset(y: animator.float * 3 + hop)
                 .shadow(color: .black.opacity(0.28), radius: 10, y: 5)
 
             ParticleLayer(particles: personality.particles)
                 .frame(width: 120, height: 120)
+
+            // Thought cloud with the source app's icon while music plays.
+            if state.mood == .tunedIn {
+                ThoughtBubble(appName: state.snapshot.audioSource, phase: bubblePhase)
+                    .offset(x: 42, y: -40)
+                    .transition(.scale(scale: 0.7).combined(with: .opacity))
+            }
+
+            // What Boo says when it swoops over.
+            if let line = personality.speech {
+                Text(line)
+                    .font(.system(size: 12, weight: .semibold, design: .serif))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 7)
+                    .background(Color.black.opacity(0.72), in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
+                    .fixedSize()
+                    .offset(y: -56)
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+            }
 
             if hovering, personality.act != .sleeping {
                 Text(bubbleText)
@@ -212,11 +262,31 @@ struct DesktopFace: View {
             }
         }
         .onAppear { owner.reportPosition() }
+        // Fly to the pointer when a swoop starts, and home when it ends.
+        .onChange(of: personality.swoopTarget) { _, target in
+            owner.flyTo(target)
+        }
+        // Local animation clock for the bubble and the jelly antics.
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(60))
+                bubblePhase += 0.09
+                switch personality.act {
+                case .wobbling: wobble = sin(bubblePhase * 4) * 7
+                case .bouncing: hop = -abs(sin(bubblePhase * 3)) * 10
+                case .sneezing: hop = sin(bubblePhase * 9) * 3
+                default:
+                    if wobble != 0 { wobble *= 0.8; if abs(wobble) < 0.1 { wobble = 0 } }
+                    if hop != 0 { hop *= 0.8; if abs(hop) < 0.1 { hop = 0 } }
+                }
+            }
+        }
         .contextMenu {
             Text(state.mood.headline)
             Divider()
             Button("Give me a fright") { personality.scare() }
             Button("Shower hearts") { personality.showerHearts() }
+            Button("Come tell me to focus") { personality.swoop() }
             Divider()
             Button("Hide desktop Boo") { owner.isVisible = false }
             Button("Quit Boo") { NSApplication.shared.terminate(nil) }
@@ -232,6 +302,10 @@ struct DesktopFace: View {
         case .dancing:         "this one slaps"
         case .celebrating:     "we did it"
         case .squashed:        "wheee"
+        case .yawning:         "hhhaaaah"
+        case .sneezing:        "atchoo"
+        case .stargazing:      "pretty"
+        case .spinning:        "wheee"
         default:               state.mood.headline
         }
     }

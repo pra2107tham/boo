@@ -167,7 +167,49 @@ struct Face: View {
                 ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
             }
             return
-        case .dancing, .none:
+        case .swooping:
+            // Determined little face — brows down, eyes forward.
+            for cx in [lx, rx] {
+                let r = CGRect(x: (cx - 4.6) * s, y: (y - 3.4) * s,
+                               width: 9.2 * s, height: 7.4 * s)
+                ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
+            }
+            return
+        case .yawning:
+            // Squeezed-shut eyes, the way a real yawn closes them.
+            for cx in [lx, rx] {
+                var arc = Path()
+                arc.move(to: p(cx - 4.2, y + 1))
+                arc.addQuadCurve(to: p(cx + 4.2, y + 1), control: p(cx, y - 3.4))
+                ctx.stroke(arc, with: .color(voidColor),
+                           style: .init(lineWidth: 3.0 * s, lineCap: .round))
+            }
+            return
+        case .sneezing:
+            // Scrunched tight.
+            for cx in [lx, rx] {
+                var l = Path()
+                l.move(to: p(cx - 3.8, y - 1.2))
+                l.addLine(to: p(cx + 3.8, y + 1.2))
+                ctx.stroke(l, with: .color(voidColor),
+                           style: .init(lineWidth: 2.8 * s, lineCap: .round))
+            }
+            return
+        case .stargazing:
+            // Looking up and slightly dreamy — bigger, raised.
+            for cx in [lx, rx] {
+                let r = CGRect(x: (cx - 4.6) * s, y: (y - 6.2) * s,
+                               width: 9.2 * s, height: 9.8 * s)
+                ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
+            }
+            return
+        case .peeking:
+            // Only one eye showing — the other is behind the screen edge.
+            let r = CGRect(x: (rx - 4.3) * s, y: (y - 4.6) * s,
+                           width: 8.6 * s, height: 9.2 * s)
+            ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
+            return
+        case .dancing, .none, .spinning, .wobbling, .bouncing:
             break
         }
 

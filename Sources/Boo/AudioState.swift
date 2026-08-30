@@ -51,17 +51,16 @@ struct AudioState {
             return r
         }
 
-        // Two conditions, both required.
+        // Per-process flags are the signal. A process must report BOTH
+        // IsRunning and IsRunningOutput: holding an output stream alone
+        // (IsRunningOutput) is what Chrome does for minutes after a video
+        // ends, which is what pinned Boo to "Tuned in" forever.
         //
-        // A process claiming IsRunningOutput only means it HOLDS an output
-        // stream — Chrome keeps one open long after a video ends, which is
-        // what pinned Boo to "Tuned in" forever. DeviceIsRunning on the
-        // output scope reports whether the hardware I/O engine is actually
-        // transporting audio, and it correctly reads 0 for a held-but-idle
-        // stream. Neither alone is sufficient: the device flag can't say
-        // WHO is playing, and the process flag can't say IF it is.
-        let (holdsStream, source) = Self.processesOutputting()
-        if holdsStream && Self.deviceActuallyRunning(device) {
+        // Note the device-level DeviceIsRunning is NOT used as a gate.
+        // It reads 0 on this hardware even mid-playback, so requiring it
+        // suppressed detection entirely.
+        let (playing, source) = Self.processesOutputting()
+        if playing {
             lastHeardSound = now
             r.isPlaying = true
             r.source = source
@@ -164,13 +163,13 @@ struct AudioState {
         // with a stale stream, plus whatever is genuinely playing). Prefer
         // one that also reports IsRunning, and skip anything that isn't a
         // real foreground-ish app, so the name shown is the actual source.
-        var fallback: String?
-        for process in processes where isRunningOutput(process) {
-            let name = appName(for: process)
-            if isRunning(process) { return (true, name) }
-            if fallback == nil { fallback = name }
+        // Require both flags together. IsRunningOutput alone means "holds
+        // a stream"; IsRunning alongside it means the stream is live.
+        for process in processes
+        where isRunningOutput(process) && isRunning(process) {
+            return (true, appName(for: process))
         }
-        return (fallback != nil, fallback)
+        return (false, nil)
     }
 
     /// The broader "this process has audio activity" flag. Used to break

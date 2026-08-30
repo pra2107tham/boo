@@ -26,6 +26,8 @@ struct Panel: View {
     let tint: HeartTint
     let subtitle: String
     let readings: [Reading]
+    /// App making the sound, when it can be named.
+    let audioSource: String?
     @ObservedObject var desktop: DesktopBoo
     @ObservedObject var personality: Personality
 
@@ -145,9 +147,18 @@ struct Panel: View {
 
     private func outputRow(_ r: Reading) -> some View {
         HStack(spacing: 7) {
-            Image(systemName: "headphones")
-                .font(.system(size: 10))
-                .foregroundStyle(playing ? HeartTint.audio.color : .white.opacity(0.45))
+            // The source app's real icon when we know it, so you can see at
+            // a glance whether it's Spotify, Music, a browser tab or a call.
+            if playing, let src = audioSource, let icon = SourceIcon.image(for: src) {
+                Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: 13, height: 13)
+                    .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+            } else {
+                Image(systemName: "headphones")
+                    .font(.system(size: 10))
+                    .foregroundStyle(playing ? HeartTint.audio.color : .white.opacity(0.45))
+            }
             Text(r.value)
                 .font(Theme.number(10.5))
                 .foregroundStyle(.white.opacity(playing ? 0.72 : 0.5))
@@ -178,6 +189,9 @@ struct Panel: View {
             Check(label: "Spooky", isOn: Binding(
                 get: { personality.scaresEnabled },
                 set: { personality.scaresEnabled = $0 }))
+            Check(label: "Nudges", isOn: Binding(
+                get: { personality.swoopEnabled },
+                set: { personality.swoopEnabled = $0 }))
             Spacer()
             Button("Quit") { NSApplication.shared.terminate(nil) }
                 .buttonStyle(.plain)
