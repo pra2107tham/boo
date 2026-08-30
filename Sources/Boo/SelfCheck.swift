@@ -157,6 +157,16 @@ enum SelfCheck {
                    "capped particles must still expire, \(spam.particles.count) left")
         }
 
+        // Typing detection. The first version demanded 3 keystrokes inside
+        // a 2s window but only sampled once per 2s poll, so it could never
+        // fire however fast you typed. These pin the threshold down.
+        assert(Activity.isTyping(idle: 0.1), "a key 0.1s ago is typing")
+        assert(Activity.isTyping(idle: 2.0), "a key 2s ago is still typing")
+        assert(!Activity.isTyping(idle: 3.0), "3s of silence is not typing")
+        assert(!Activity.isTyping(idle: 60), "a minute idle is not typing")
+        assert(Activity.intensity(idle: 0) > 0.9, "fresh keystroke is intense")
+        assert(Activity.intensity(idle: 5) == 0, "long silence is zero intensity")
+
         // Behaviour priority: a filling disk must outrank a cold draught,
         // and neither may interrupt a performance.
         MainActor.assumeIsolated {

@@ -35,18 +35,17 @@ struct Activity {
             .combinedSessionState, eventType: .keyDown)
         r.idleSeconds = since
 
-        // A falling value means a key was pressed since the last sample.
-        if since < lastKeyTime { recentKeys.append(now) }
+        // The old version counted at most ONE keystroke per poll, and polls
+        // are 2s apart — so "3 keys within 2 seconds" could never be
+        // satisfied no matter how fast you typed. It was impossible by
+        // construction, not merely strict.
+        //
+        // The idle timer is the whole signal: if it is low, a key was
+        // pressed recently. That is all "is typing" needs to mean.
         lastKeyTime = since
 
-        // Keep a 4-second window and judge intensity from its density.
-        recentKeys.removeAll { now.timeIntervalSince($0) > 4 }
-        // Enter on 3 keys in 2s, leave after 4s of silence, matching the
-        // design's thresholds.
-        let recentCount = recentKeys.filter { now.timeIntervalSince($0) <= 2 }.count
-        r.isTyping = recentCount >= 3 || (since < 4 && recentKeys.count >= 3)
-        // ~8 keys in 4s is a brisk pace; cap there so the hands do not blur.
-        r.typingIntensity = min(1, Double(recentKeys.count) / 8)
+        r.isTyping = Self.isTyping(idle: since)
+        r.typingIntensity = Self.intensity(idle: since)
 
         r.freeDiskGB = Self.freeDiskGB()
         // No public API reports fan RPM on Apple Silicon, so sustained heavy
@@ -54,6 +53,19 @@ struct Activity {
         r.fansLikelySpinning = cpu >= 80
         r.uptime = ProcessInfo.processInfo.systemUptime
         return r
+    }
+
+    /// Typing = a key pressed in the last couple of seconds.
+    ///
+    /// Exposed so the threshold is testable without a human at the
+    /// keyboard — the previous version needed 3 keystrokes inside a 2s
+    /// window while only ever sampling once per 2s poll, which no amount
+    /// of fast typing could satisfy.
+    static func isTyping(idle: Double) -> Bool { idle < 2.5 }
+
+    /// Hot right after a keystroke, cooling toward zero as you pause.
+    static func intensity(idle: Double) -> Double {
+        max(0, min(1, (2.5 - idle) / 2.5))
     }
 
     private static func freeDiskGB() -> Double? {
