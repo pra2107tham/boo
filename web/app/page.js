@@ -2,7 +2,7 @@ import './globals.css';
 import { Ghost, Bloom } from './Ghost';
 
 const REPO = 'https://github.com/pra2107tham/boo';
-const DMG = `${REPO}/releases/latest/download/Boo-1.0.0.dmg`;
+const DMG = `${REPO}/releases/latest`;
 
 const MOODS = [
   { name: 'Calm', when: 'CPU under 30%', tint: 'calm', note: 'green heart, slow float' },
