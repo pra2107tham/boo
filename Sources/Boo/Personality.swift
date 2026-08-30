@@ -457,7 +457,10 @@ final class Personality: ObservableObject {
             try? await Task.sleep(for: .milliseconds(280))
             guard !Task.isCancelled else { return }
             withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
-                peekSlide = peekFromLeft ? 38 : -38
+                // Toward the door, not away from it. A door on the left
+                // means Boo moves left (negative x).
+                // 26pt leaves roughly a third of Boo peeking out.
+                peekSlide = peekFromLeft ? -26 : 26
             }
             try? await Task.sleep(for: .milliseconds(1700))
             guard !Task.isCancelled else { return }

@@ -399,20 +399,29 @@ struct DesktopFace: View {
     }
 
     /// Everything except the strip the door covers.
+    ///
+    /// Built from PeekDoor's own geometry, so the hole and the door cannot
+    /// drift apart. Computing them separately is what left Boo clipped in
+    /// one place while the door was drawn in another.
     @ViewBuilder
     private var peekMask: some View {
         if personality.doorOpen > 0.5 {
-            HStack(spacing: 0) {
-                if personality.peekFromLeft {
-                    Color.clear.frame(width: 74)      // hidden by the door
-                    Rectangle()
-                } else {
-                    Rectangle()
-                    Color.clear.frame(width: 74)
-                }
+            let centre = PeekDoor.centreX(fromLeft: personality.peekFromLeft)
+            // The mask is applied to the 96pt ghost, whose own centre is
+            // shifted by peekSlide — so the hole is placed relative to that.
+            let holeCentre = centre - personality.peekSlide
+            Canvas { ctx, size in
+                let doorRect = CGRect(x: size.width / 2 + holeCentre - PeekDoor.width / 2,
+                                      y: -200,
+                                      width: PeekDoor.width,
+                                      height: size.height + 400)
+                var visible = Path(CGRect(x: -200, y: -200,
+                                          width: size.width + 400,
+                                          height: size.height + 400))
+                visible.addRect(doorRect)
+                // Even-odd: the door rect punches a hole in the full area.
+                ctx.fill(visible, with: .color(.black), style: FillStyle(eoFill: true))
             }
-            .frame(width: 220, height: 200)
-            .offset(x: personality.peekFromLeft ? -78 : 78)
         } else {
             Rectangle()
         }

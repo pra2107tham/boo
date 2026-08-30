@@ -116,12 +116,27 @@ struct PeekDoor: View {
     /// Which side of Boo the door stands on.
     let fromLeft: Bool
 
+    /// Door size and gap, shared with the mask so the two cannot drift
+    /// apart — they were computed separately before, which is exactly how
+    /// Boo ended up clipped in one place and the door drawn in another.
+    static let width: CGFloat = 74
+    static let height: CGFloat = 104
+    /// Negative: the door OVERLAPS Boo's resting position rather than
+    /// standing beside it. With a positive gap the door was too far away to
+    /// ever cover him — he slid past it to the far side instead of behind.
+    static let gap: CGFloat = -36
+
+    /// Horizontal centre of the door relative to the view centre.
+    static func centreX(fromLeft: Bool) -> CGFloat {
+        (fromLeft ? -1 : 1) * (gap + width / 2)
+    }
+
     var body: some View {
         Canvas { ctx, size in
             guard open > 0.01 else { return }
-            let w: CGFloat = 74, h: CGFloat = 104
+            let w = Self.width, h = Self.height
             // Sits beside Boo, on the side it ducks toward.
-            let x = size.width / 2 + (fromLeft ? -w - 4 : 4)
+            let x = size.width / 2 + Self.centreX(fromLeft: fromLeft) - w / 2
             let y = size.height / 2 - h / 2
 
             ctx.opacity = Double(open)
