@@ -120,6 +120,29 @@ enum SelfCheck {
                    "particles must expire, got \(personality.particles.count)")
         }
 
+        // Scratchpad always holds exactly three slots, whatever is stored.
+        // A short or missing saved array must not crash the bubble row.
+        MainActor.assumeIsolated {
+            UserDefaults.standard.removeObject(forKey: "booScratchpadNotes")
+            let fresh = Scratchpad()
+            assert(fresh.notes.count == 3, "empty state must still be 3 slots")
+            assert(fresh.filledCount == 0, "nothing stored means nothing filled")
+
+            // A truncated saved array (older version, manual edit) must pad.
+            UserDefaults.standard.set(["only one"], forKey: "booScratchpadNotes")
+            let padded = Scratchpad()
+            assert(padded.notes.count == 3, "short saved array must pad to 3")
+            assert(padded.notes[0] == "only one", "existing note must survive")
+            assert(padded.filledCount == 1, "one note means one filled")
+
+            padded.clear(0)
+            assert(padded.filledCount == 0, "clear should empty the slot")
+            // Out-of-range clear must be a no-op, not a crash.
+            padded.clear(99)
+
+            UserDefaults.standard.removeObject(forKey: "booScratchpadNotes")
+        }
+
         print("self-check passed")
         exit(0)
     }

@@ -24,6 +24,8 @@ enum Act: Equatable {
     case sneezing      // tiny sneeze, recoil
     case bouncing      // hopping up and down
     case stargazing    // drifting upward, looking up
+    case orbiting      // tiny, doing laps around the cursor
+    case scratchpad    // bubbles out, waiting for a note
 }
 
 /// The things Boo does on its own when nothing else is happening.
@@ -82,6 +84,8 @@ final class Personality: ObservableObject {
     @Published private(set) var lookY: CGFloat = 0
     /// Drag squash: 1 is round, below 1 is squashed flat.
     @Published private(set) var squash: CGFloat = 1
+    /// Lean angle while being dragged, degrees.
+    @Published private(set) var dragTilt: Double = 0
     @Published private(set) var danceAngle: CGFloat = 0
 
     /// Set by the desktop window so cursor tracking knows where Boo is.
@@ -112,6 +116,7 @@ final class Personality: ObservableObject {
 
     private var scareTimer: Timer?
     private var swoopTimer: Timer?
+    private var orbitTimer: Timer?
     private var idleTimer2: Timer?
 
     /// What Boo says when it swoops over. Short, ghostly, never bossy.
@@ -126,6 +131,12 @@ final class Personality: ObservableObject {
     @Published private(set) var swoopTarget: CGPoint?
     @Published private(set) var spin: Double = 0
     @Published private(set) var stretch: CGFloat = 1
+    /// 1 is full size, 0.28 is cursor-sized. Drives the shrink for orbiting.
+    @Published private(set) var scale: CGFloat = 1
+    /// Angle around the cursor while orbiting, in radians.
+    @Published private(set) var orbitAngle: Double = 0
+    /// Trail of recent positions, so the lap leaves a comet tail.
+    @Published private(set) var trail: [CGPoint] = []
 
     init() {
         startCursorTracking()
@@ -159,6 +170,73 @@ final class Personality: ObservableObject {
         }
     }
 
+    /// Shrink to cursor size, fly over, do a few laps, and go home.
+    ///
+    /// The laps are the point: a straight there-and-back reads as a
+    /// notification, but circling reads as a creature that came to see you.
+    func orbitCursor(laps: Int = 3) {
+        guard act == .none || act == .dancing else { return }
+        actResetTask?.cancel()
+        orbitTimer?.invalidate()
+        act = .orbiting
+        trail = []
+
+        // Shrink first so the flight over is already cursor-sized.
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.7)) { scale = 0.28 }
+
+        let start = Date()
+        let lapDuration = 0.85
+        let total = lapDuration * Double(laps)
+
+        orbitTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) {
+            [weak self] t in
+            guard let me = self else { t.invalidate(); return }
+            Task { @MainActor in
+                let elapsed = Date().timeIntervalSince(start)
+                guard elapsed < total else {
+                    t.invalidate()
+                    me.endOrbit()
+                    return
+                }
+                // Ease the radius in and out so it spirals in, circles,
+                // then spirals out rather than snapping to a fixed ring.
+                let progress = elapsed / total
+                let envelope = sin(progress * .pi)              // 0 -> 1 -> 0
+                let radius = 26 + 24 * envelope
+                me.orbitAngle = elapsed / lapDuration * 2 * .pi
+
+                let mouse = NSEvent.mouseLocation
+                let point = CGPoint(
+                    x: mouse.x + cos(me.orbitAngle) * radius,
+                    y: mouse.y + sin(me.orbitAngle) * radius)
+                me.swoopTarget = point
+
+                // Keep a short tail of where it has been.
+                me.trail.append(point)
+                if me.trail.count > 14 { me.trail.removeFirst() }
+
+                // Look where it is going, not where it came from.
+                me.lookX = CGFloat(cos(me.orbitAngle + .pi / 2))
+                me.lookY = CGFloat(-sin(me.orbitAngle + .pi / 2))
+            }
+        }
+    }
+
+    private func endOrbit() {
+        withAnimation(.easeOut(duration: 0.3)) {
+            trail = []
+            lookX = 0
+            lookY = 0
+        }
+        swoopTarget = nil                       // drift home
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.62)) { scale = 1 }
+        actResetTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(900))
+            guard !Task.isCancelled else { return }
+            if act == .orbiting { act = .none }
+        }
+    }
+
     /// Fly to the cursor, say something, fly home.
     func swoop() {
         // Never interrupt: no swooping while asleep, dragged, or already
@@ -173,6 +251,12 @@ final class Personality: ObservableObject {
         // you are actually looking at.
         swoopTarget = CGPoint(x: mouse.x - 70, y: mouse.y + 50)
         speech = Self.focusLines.randomElement()
+        // A quick shrink on approach, back to size once it has landed.
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.72)) { scale = 0.6 }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(700))
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.6)) { scale = 1 }
+        }
 
         actResetTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(2.6))
@@ -370,14 +454,34 @@ final class Personality: ObservableObject {
     func beginDrag() {
         noteActivity()
         actResetTask?.cancel()
+        orbitTimer?.invalidate()
         act = .squashed
-        withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) { squash = 0.82 }
+        // Picked up: it compresses like something being gripped.
+        withAnimation(.spring(response: 0.24, dampingFraction: 0.62)) { squash = 0.88 }
     }
 
-    func endDrag() {
+    /// Lean into the direction of travel, so fast drags stretch and tilt.
+    func dragging(velocity: CGSize) {
+        let speed = min(hypot(velocity.width, velocity.height), 2400)
+        // Stretch along the direction of motion — the classic squash-and-
+        // stretch that makes moving objects read as having mass.
+        let stretchAmount = 1 + (speed / 2400) * 0.22
+        let tilt = max(-16, min(16, -velocity.width / 55))
+        withAnimation(.interactiveSpring(response: 0.16, dampingFraction: 0.7)) {
+            squash = 1 / stretchAmount
+            dragTilt = tilt
+        }
+    }
+
+    func endDrag(velocity: CGSize = .zero) {
         act = .none
-        // Overshoot then settle — a bit of weight on landing.
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.45)) { squash = 1 }
+        // Let go: overshoot, wobble, settle. Faster throws wobble harder.
+        let speed = min(hypot(velocity.width, velocity.height), 2400)
+        let damping = 0.34 + (1 - speed / 2400) * 0.24
+        withAnimation(.spring(response: 0.52, dampingFraction: damping)) {
+            squash = 1
+            dragTilt = 0
+        }
     }
 
     /// Music started or stopped.

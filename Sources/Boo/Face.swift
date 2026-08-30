@@ -209,6 +209,23 @@ struct Face: View {
                            width: 8.6 * s, height: 9.2 * s)
             ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
             return
+        case .orbiting:
+            // Cursor-sized, so detail is wasted: two big simple eyes that
+            // still read at 26pt across.
+            for cx in [lx, rx] {
+                let r = CGRect(x: (cx - 5.4) * s, y: (y - 5.4) * s,
+                               width: 10.8 * s, height: 10.8 * s)
+                ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
+            }
+            return
+        case .scratchpad:
+            // Attentive: looking down at the bubbles it just produced.
+            for cx in [lx, rx] {
+                let r = CGRect(x: (cx - 4.3) * s, y: (y - 3.2) * s,
+                               width: 8.6 * s, height: 9.2 * s)
+                ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
+            }
+            return
         case .dancing, .none, .spinning, .wobbling, .bouncing:
             break
         }

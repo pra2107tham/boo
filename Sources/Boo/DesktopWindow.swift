@@ -12,7 +12,7 @@ final class DesktopWindow: NSPanel {
     private static let originKey = "desktopBooOrigin"
 
     init(content: NSView) {
-        super.init(contentRect: NSRect(x: 0, y: 0, width: 120, height: 120),
+        super.init(contentRect: NSRect(x: 0, y: 0, width: 168, height: 168),
                    // .nonactivatingPanel keeps your current app focused when
                    // you drag Boo — grabbing the ghost shouldn't steal focus
                    // from whatever you're typing in.
@@ -28,7 +28,10 @@ final class DesktopWindow: NSPanel {
         level = .floating
         // Follow you across Spaces, and stay visible over fullscreen apps.
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        isMovableByWindowBackground = true
+        // NOT isMovableByWindowBackground: it moves the window itself while
+        // the SwiftUI DragGesture is also handling the same events, and the
+        // two fight. Dragging is driven explicitly in moveBy() instead.
+        isMovableByWindowBackground = false
         // Panels normally hide when the app deactivates; this is a pet, it stays.
         hidesOnDeactivate = false
 
@@ -86,6 +89,7 @@ final class DesktopBoo: ObservableObject {
     private var panel: DesktopWindow?
     private let state: BooState
     let personality: Personality
+    let scratchpad = Scratchpad()
 
     init(state: BooState, personality: Personality) {
         self.state = state
@@ -102,7 +106,7 @@ final class DesktopBoo: ObservableObject {
         let view = NSHostingView(rootView: DesktopFace(state: state,
                                                        personality: personality,
                                                        owner: self))
-        view.frame = NSRect(x: 0, y: 0, width: 120, height: 120)
+        view.frame = NSRect(x: 0, y: 0, width: 168, height: 168)
         let p = DesktopWindow(content: view)
         p.orderFront(nil)
         panel = p
@@ -119,6 +123,43 @@ final class DesktopBoo: ObservableObject {
     func reportPosition() {
         guard let p = panel else { return }
         personality.screenPosition = CGPoint(x: p.frame.midX, y: p.frame.midY)
+    }
+
+    /// Move the window by a delta during a drag. Driven from the gesture so
+    /// there is exactly one thing deciding where the window is.
+    func moveBy(dx: CGFloat, dy: CGFloat) {
+        guard let p = panel else { return }
+        // Screen y grows upward; gesture y grows downward.
+        p.setFrameOrigin(CGPoint(x: p.frame.origin.x + dx,
+                                 y: p.frame.origin.y - dy))
+        personality.screenPosition = CGPoint(x: p.frame.midX, y: p.frame.midY)
+    }
+
+    /// Called when a drag ends: save where it landed, and keep it on screen.
+    func settleAfterDrag() {
+        guard let p = panel else { return }
+        // A window dragged mostly off-screen is unrecoverable, so nudge it
+        // back until at least most of it is visible.
+        if let visible = NSScreen.screens.first(where: {
+            $0.frame.intersects(p.frame)
+        })?.visibleFrame {
+            var origin = p.frame.origin
+            let margin: CGFloat = 30
+            origin.x = min(max(origin.x, visible.minX - margin),
+                           visible.maxX - p.frame.width + margin)
+            origin.y = min(max(origin.y, visible.minY - margin),
+                           visible.maxY - p.frame.height + margin)
+            if origin != p.frame.origin {
+                NSAnimationContext.runAnimationGroup { ctx in
+                    ctx.duration = 0.28
+                    ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                    p.animator().setFrameOrigin(origin)
+                }
+            }
+        }
+        UserDefaults.standard.set(NSStringFromPoint(p.frame.origin),
+                                  forKey: "desktopBooOrigin")
+        reportPosition()
     }
 
     /// Fly the window to a point, or back to where the user parked it.
@@ -156,6 +197,8 @@ struct DesktopFace: View {
     @State private var hovering = false
     @State private var hoverStart: Date?
     @State private var bubblePhase: Double = 0
+    @State private var lastDrag: CGPoint = .zero
+    @State private var editingNote: Int?
     @State private var wobble: Double = 0
     @State private var hop: CGFloat = 0
 
@@ -189,10 +232,17 @@ struct DesktopFace: View {
                 .scaleEffect(x: (2 - personality.squash) / personality.stretch,
                              y: personality.squash * personality.stretch,
                              anchor: .bottom)
-                .rotationEffect(.degrees(personality.danceAngle + wobble), anchor: .bottom)
+                .rotationEffect(.degrees(personality.danceAngle + wobble
+                                         + personality.dragTilt), anchor: .bottom)
+                .scaleEffect(personality.scale)
                 .rotation3DEffect(.degrees(personality.spin), axis: (x: 0, y: 1, z: 0))
                 .offset(y: animator.float * 3 + hop)
                 .shadow(color: .black.opacity(0.28), radius: 10, y: 5)
+
+            if personality.act == .orbiting {
+                OrbitTrail(points: personality.trail)
+                    .frame(width: 120, height: 120)
+            }
 
             ParticleLayer(particles: personality.particles)
                 .frame(width: 120, height: 120)
@@ -218,7 +268,13 @@ struct DesktopFace: View {
                     .transition(.scale(scale: 0.8).combined(with: .opacity))
             }
 
-            if hovering, personality.act != .sleeping {
+            // Scratchpad bubbles slide out below on hover.
+            ScratchBubbles(pad: owner.scratchpad,
+                           editing: $editingNote,
+                           visible: hovering || editingNote != nil)
+                .offset(y: 52)
+
+            if hovering, personality.act != .sleeping, editingNote == nil {
                 Text(bubbleText)
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .padding(.horizontal, 9)
@@ -228,20 +284,29 @@ struct DesktopFace: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
         }
-        .frame(width: 120, height: 120)
+        .frame(width: 168, height: 168)
         .contentShape(Rectangle())
         // Click for hearts — the first thing anyone tries.
+        .onTapGesture(count: 2) { personality.orbitCursor() }
         .onTapGesture { personality.showerHearts() }
-        // Drag squashes it; the window itself moves via isMovableByWindowBackground.
+        // One gesture drives both the window position and the squash, so
+        // nothing competes for the same events.
         .gesture(
-            DragGesture(minimumDistance: 3)
-                .onChanged { _ in
+            DragGesture(minimumDistance: 2, coordinateSpace: .global)
+                .onChanged { value in
                     if personality.act != .squashed { personality.beginDrag() }
-                    owner.reportPosition()
+                    // Move by the delta since the last frame, not from the
+                    // start, so the window tracks the pointer exactly.
+                    let dx = value.location.x - lastDrag.x
+                    let dy = value.location.y - lastDrag.y
+                    if lastDrag != .zero { owner.moveBy(dx: dx, dy: dy) }
+                    lastDrag = value.location
+                    personality.dragging(velocity: value.velocity)
                 }
-                .onEnded { _ in
-                    personality.endDrag()
-                    owner.reportPosition()
+                .onEnded { value in
+                    lastDrag = .zero
+                    personality.endDrag(velocity: value.velocity)
+                    owner.settleAfterDrag()
                 }
         )
         .onHover { h in
@@ -287,6 +352,7 @@ struct DesktopFace: View {
             Button("Give me a fright") { personality.scare() }
             Button("Shower hearts") { personality.showerHearts() }
             Button("Come tell me to focus") { personality.swoop() }
+            Button("Do a lap around my cursor") { personality.orbitCursor() }
             Divider()
             Button("Hide desktop Boo") { owner.isVisible = false }
             Button("Quit Boo") { NSApplication.shared.terminate(nil) }
@@ -306,6 +372,7 @@ struct DesktopFace: View {
         case .sneezing:        "atchoo"
         case .stargazing:      "pretty"
         case .spinning:        "wheee"
+        case .orbiting:        "zoom"
         default:               state.mood.headline
         }
     }

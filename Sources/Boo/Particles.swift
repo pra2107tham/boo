@@ -71,3 +71,36 @@ struct ParticleLayer: View {
         ctx.fill(path, with: .color(Color(red: 0.475, green: 0.722, blue: 0.867)))
     }
 }
+
+/// A fading comet tail behind Boo while it laps your cursor.
+///
+/// The trail is what sells the speed — without it a small ghost moving in a
+/// circle just looks like it is being dragged.
+struct OrbitTrail: View {
+    /// Screen-space points, oldest first.
+    let points: [CGPoint]
+
+    var body: some View {
+        Canvas { ctx, size in
+            guard points.count > 1, let head = points.last else { return }
+            let centre = CGPoint(x: size.width / 2, y: size.height / 2)
+
+            for (i, p) in points.enumerated() {
+                // Older points are smaller and fainter.
+                let age = Double(i) / Double(points.count)
+                let radius = 1.5 + 3.5 * age
+                // Positions are absolute screen points; draw them relative
+                // to where the ghost currently is.
+                let dx = p.x - head.x
+                let dy = head.y - p.y          // screen y is inverted
+                let rect = CGRect(x: centre.x + dx - radius,
+                                  y: centre.y + dy - radius,
+                                  width: radius * 2, height: radius * 2)
+                ctx.opacity = age * 0.45
+                ctx.fill(Path(ellipseIn: rect),
+                         with: .color(Color(red: 0.969, green: 0.957, blue: 0.925)))
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}

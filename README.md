@@ -30,6 +30,10 @@ Right-click it to send it back.
 - **Swoops in every five minutes** to whisper "ssshhh… focus". Tick **Nudges** to turn it off.
 - **Eight idle antics** — spins, yawns, sneezes, wobbles, bounces, stargazes — picked at
   random every 25–70 seconds so it never reads as a loop.
+- **Laps your cursor** — double-click it and it shrinks to cursor size, flies over, does
+  three laps with a comet trail, and drifts home
+- **Three scratchpad bubbles** appear on hover — park a room number, a name, a command.
+  Click to type, right-click to copy or clear. They survive restarts.
 - **Shows what is playing** as the real app icon in a thought cloud, so you can see at a
   glance whether the sound is Spotify, Music, a browser tab or a call.
 
