@@ -27,8 +27,30 @@ Right-click it to send it back.
 - **Falls asleep** if you leave for five minutes, wakes when you come back.
 - **Cheers** when a long build finishes.
 - **Startles you** now and then, if you tick **Spooky**. Off by default.
+- **Swoops in every five minutes** to whisper "ssshhh… focus". Tick **Nudges** to turn it off.
+- **Eight idle antics** — spins, yawns, sneezes, wobbles, bounces, stargazes — picked at
+  random every 25–70 seconds so it never reads as a loop.
+- **Shows what is playing** as the real app icon in a thought cloud, so you can see at a
+  glance whether the sound is Spotify, Music, a browser tab or a call.
+
+## Website
+
+`web/` is the landing page — Next.js, statically exported.
+
+```bash
+cd web && npm install && npm run dev
+```
 
 ## Install
+
+Download the latest DMG from [Releases](https://github.com/pra2107tham/boo/releases),
+open it, and drag Boo to Applications.
+
+Boo is not notarised by Apple — that needs a paid developer account — so the first
+time you open it macOS will warn you. **Right-click the app and choose Open**, then
+confirm once. It launches normally after that.
+
+Or build it yourself:
 
 ```bash
 git clone https://github.com/pra2107tham/boo.git
@@ -38,6 +60,12 @@ swift run -c release
 
 Needs macOS 14 or later. No permissions, no entitlements, no login item — every signal comes
 from a public API that asks you for nothing.
+
+To build the app bundle and DMG locally:
+
+```bash
+./scripts/build-app.sh 1.0.0
+```
 
 ## Why it's light
 

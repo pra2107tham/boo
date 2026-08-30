@@ -3,3 +3,8 @@
 *.xcodeproj
 .DS_Store
 DerivedData/
+Boo.app/
+dist/
+web/node_modules/
+web/.next/
+web/out/

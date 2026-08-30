@@ -1,0 +1,109 @@
+:root {
+  --ink: #f4f2ee;
+  --ink-dim: rgba(244, 242, 238, 0.58);
+  --ink-faint: rgba(244, 242, 238, 0.34);
+  --ground: #0a0b0d;
+  --card: rgba(255, 255, 255, 0.04);
+  --line: rgba(255, 255, 255, 0.09);
+  --amber: #f5a623;
+  --green: #5bc98a;
+  --teal: #57c4c0;
+  --red: #ef5f4c;
+  --serif: 'Instrument Serif', 'New York', Georgia, serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --sans: Inter, -apple-system, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* The bloom: soft colour behind everything, the same recipe as the app's
+   panel. Blurred far enough that it reads as atmosphere, never as shapes. */
+.bloom {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  filter: blur(90px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.blob { position: absolute; border-radius: 50%; }
+
+.shell { position: relative; z-index: 1; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+/* Type. The serif is what stops this looking like every other landing page. */
+.display {
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 0.98;
+  margin: 0;
+}
+.mono { font-family: var(--mono); }
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* Glass surfaces */
+.glass {
+  background: rgba(255, 255, 255, 0.045);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--line);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 26px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--ink);
+  color: #0a0b0d;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(0,0,0,0.55); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.06); }
+
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+@keyframes beat  { 0%,100% { transform: scale(1); } 12% { transform: scale(1.16); } }
+@keyframes blink { 0%,96%,100% { transform: scaleY(1); } 98% { transform: scaleY(0.08); } }
+@keyframes drift { 0%,100% { transform: translate(0,0); } 50% { transform: translate(26px,-18px); } }
+
+.ghost-float { animation: float 3.4s ease-in-out infinite; }
+.heart-beat  { animation: beat 2.6s ease-in-out infinite; transform-origin: 32px 43px; }
+.eyes-blink  { animation: blink 6s ease-in-out infinite; transform-origin: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost-float, .heart-beat, .eyes-blink, .blob { animation: none !important; }
+}
