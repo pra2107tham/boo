@@ -86,9 +86,9 @@ final class Personality: ObservableObject {
     @Published private(set) var squash: CGFloat = 1
     /// Lean angle while being dragged, degrees.
     @Published private(set) var dragTilt: Double = 0
-    /// How far Boo has slid toward a screen edge while peeking.
-    @Published private(set) var peekSlide: CGFloat = 0
-    private var peekOffset: CGFloat = 0
+    /// Set while Boo wants the window moved to a screen edge to hide.
+    /// nil means "come back to where you were parked".
+    @Published private(set) var hideRequest: Edge?
     @Published private(set) var danceAngle: CGFloat = 0
 
     /// Set by the desktop window so cursor tracking knows where Boo is.
@@ -442,21 +442,39 @@ final class Personality: ObservableObject {
         noteActivity()
         actResetTask?.cancel()
         act = .peeking
-        // Slide toward the nearest horizontal edge, leaving a sliver showing.
-        peekOffset = screenPosition.x < (NSScreen.main?.frame.midX ?? 700) ? -62 : 62
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
-            peekSlide = peekOffset
-        }
+        // Hiding means the WINDOW goes to a screen edge. Sliding the ghost
+        // inside its own window just moved it around in empty space, which
+        // is why it read as a one-eyed ghost sitting in the open rather
+        // than something hiding behind anything.
+        hideRequest = nearestEdge()
         actResetTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(1600))
+            try? await Task.sleep(for: .milliseconds(2100))
             guard !Task.isCancelled else { return }
-            // Duck back out of sight, then return to normal.
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) { peekSlide = 0 }
-            try? await Task.sleep(for: .milliseconds(500))
+            hideRequest = nil          // come back out
+            try? await Task.sleep(for: .milliseconds(650))
             guard !Task.isCancelled else { return }
             if act == .peeking { act = .none }
         }
     }
+
+    /// Which screen edge Boo is closest to, so it hides behind the nearest
+    /// one rather than crossing the whole display to get somewhere.
+    private func nearestEdge() -> Edge {
+        guard let screen = NSScreen.screens.first(where: {
+            $0.frame.contains(screenPosition)
+        }) ?? NSScreen.main else { return .right }
+        let f = screen.visibleFrame
+        let distances: [(Edge, CGFloat)] = [
+            (.left,   screenPosition.x - f.minX),
+            (.right,  f.maxX - screenPosition.x),
+            (.bottom, screenPosition.y - f.minY),
+        ]
+        return distances.min(by: { $0.1 < $1.1 })?.0 ?? .right
+    }
+
+    /// Which way Boo is peeking from, so the visible eye is the one nearer
+    /// the middle of the screen.
+    enum Edge { case left, right, bottom }
 
     /// Kept so the menu item and any existing callers still work.
     func scare() { peek() }

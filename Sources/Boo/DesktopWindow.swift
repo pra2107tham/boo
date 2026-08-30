@@ -156,6 +156,46 @@ final class DesktopBoo: ObservableObject {
 
     /// Move the window by a delta during a drag, so exactly one thing
     /// decides where the window is.
+    /// Slide the window mostly off a screen edge, or bring it back.
+    ///
+    /// This is what makes peeking read as hiding: the window genuinely
+    /// leaves the screen apart from a sliver. Sliding the ghost inside its
+    /// own window only moved it around in empty space.
+    func hide(behind edge: Personality.Edge?) {
+        guard let p = panel else { return }
+        guard let edge else {
+            // Come back to wherever the user parked it.
+            if let saved = UserDefaults.standard.string(forKey: "desktopBooOrigin") {
+                animate(p, to: NSPointFromString(saved), duration: 0.5)
+            }
+            return
+        }
+        guard let screen = NSScreen.screens.first(where: { $0.frame.intersects(p.frame) })
+                ?? NSScreen.main else { return }
+        let f = screen.visibleFrame
+        // Leave ~34pt showing: enough for one eye and a hand, not enough to
+        // read as a ghost standing in the open.
+        let peek: CGFloat = 34
+        let target: CGPoint
+        switch edge {
+        case .left:   target = CGPoint(x: f.minX - p.frame.width + peek, y: p.frame.origin.y)
+        case .right:  target = CGPoint(x: f.maxX - peek, y: p.frame.origin.y)
+        case .bottom: target = CGPoint(x: p.frame.origin.x, y: f.minY - p.frame.height + peek + 40)
+        }
+        animate(p, to: target, duration: 0.55)
+    }
+
+    private func animate(_ p: NSWindow, to origin: CGPoint, duration: Double) {
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = duration
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            p.animator().setFrameOrigin(origin)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.05) { [weak self] in
+            self?.reportPosition()
+        }
+    }
+
     /// Move the window by the cursor's screen-space delta.
     ///
     /// Both points are in screen coordinates, so y is already the right way
@@ -298,7 +338,16 @@ struct DesktopFace: View {
         personality.act == .sleeping ? .sleepy : state.mood
     }
 
-    private var bubblesShown: Bool { hovering || editingNote != nil }
+    /// The scratchpad only belongs on screen when Boo is idle. Leaving the
+    /// bubbles up during a lap, a peek or a hide looks like UI stuck to a
+    /// creature that has gone somewhere else.
+    private var bubblesShown: Bool {
+        if editingNote != nil { return true }
+        switch personality.act {
+        case .none, .dancing, .petted, .hearts: return hovering
+        default: return false
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -334,6 +383,9 @@ struct DesktopFace: View {
             owner.setAcceptsKeyboard(value != nil)
             if value != nil { owner.ensureRoomForEditor() }
         }
+        .onChange(of: personality.hideRequest) { _, edge in
+            owner.hide(behind: edge)
+        }
         .onChange(of: personality.swoopTarget) { _, target in
             // The orbit drives position per frame; everything else animates.
             owner.flyTo(target, animated: personality.act != .orbiting)
@@ -361,6 +413,7 @@ struct DesktopFace: View {
              gaze: personality.lookX,
              gazeY: personality.lookY,
              act: personality.act,
+             peekFromLeft: personality.hideRequest == .left,
              heartScale: animator.heartScale,
              voidColor: Color(red: 0.05, green: 0.05, blue: 0.06))
             .frame(width: 96, height: 96)
@@ -371,7 +424,6 @@ struct DesktopFace: View {
                                      + personality.dragTilt), anchor: .bottom)
             .rotation3DEffect(.degrees(personality.spin), axis: (x: 0, y: 1, z: 0))
             .scaleEffect(personality.scale)
-            .offset(x: personality.peekSlide)
             // Idle float pauses during a drag: a ghost bobbing inside a window
             // that is itself moving reads as the drag lagging behind.
             .offset(y: (personality.act == .squashed ? 0 : animator.float * 3)
