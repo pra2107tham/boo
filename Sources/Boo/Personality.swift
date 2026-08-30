@@ -154,7 +154,8 @@ final class Personality: ObservableObject {
         guard swoopEnabled else { return }
         swoopTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) {
             [weak self] _ in
-            Task { @MainActor in self?.swoop() }
+            guard let me = self else { return }
+            Task { @MainActor in me.swoop() }
         }
     }
 
@@ -192,9 +193,10 @@ final class Personality: ObservableObject {
         let delay = Double.random(in: 25...70)
         idleTimer2 = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) {
             [weak self] _ in
+            guard let me = self else { return }
             Task { @MainActor in
-                self?.performIdleAntic()
-                self?.scheduleIdleAntic()
+                me.performIdleAntic()
+                me.scheduleIdleAntic()
             }
         }
     }
@@ -262,10 +264,11 @@ final class Personality: ObservableObject {
         let delay = Double.random(in: 1200...3000)
         scareTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) {
             [weak self] _ in
+            guard let me = self else { return }
             Task { @MainActor in
-                guard let self, self.scaresEnabled else { return }
-                if self.act == .none { self.scare() }
-                self.scheduleScare()
+                guard me.scaresEnabled else { return }
+                if me.act == .none { me.scare() }
+                me.scheduleScare()
             }
         }
     }
@@ -277,7 +280,8 @@ final class Personality: ObservableObject {
     private func startCursorTracking() {
         cursorTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) {
             [weak self] _ in
-            Task { @MainActor in self?.trackCursor() }
+            guard let me = self else { return }
+            Task { @MainActor in me.trackCursor() }
         }
     }
 
@@ -306,12 +310,12 @@ final class Personality: ObservableObject {
     private func startIdleWatch() {
         idleTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) {
             [weak self] _ in
+            guard let me = self else { return }
             Task { @MainActor in
-                guard let self else { return }
-                if Date().timeIntervalSince(self.lastUserActivity) > self.sleepAfter {
-                    if self.act != .sleeping { self.act = .sleeping }
-                } else if self.act == .sleeping {
-                    self.wake()
+                if Date().timeIntervalSince(me.lastUserActivity) > me.sleepAfter {
+                    if me.act != .sleeping { me.act = .sleeping }
+                } else if me.act == .sleeping {
+                    me.wake()
                 }
             }
         }
@@ -399,12 +403,13 @@ final class Personality: ObservableObject {
         danceTimer?.invalidate()
         danceTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) {
             [weak self] _ in
+            guard let me = self else { return }
             Task { @MainActor in
-                guard let self, self.act == .dancing else { return }
+                guard me.act == .dancing else { return }
                 // A slow sway, roughly two seconds a cycle.
-                self.danceAngle = sin(Date().timeIntervalSince1970 * 3) * 9
+                me.danceAngle = sin(Date().timeIntervalSince1970 * 3) * 9
                 // Occasional music notes drifting off.
-                if Int.random(in: 0..<40) == 0 { self.emit(.note, count: 1) }
+                if Int.random(in: 0..<40) == 0 { me.emit(.note, count: 1) }
             }
         }
     }
@@ -438,7 +443,8 @@ final class Personality: ObservableObject {
         guard particleTimer == nil else { return }
         particleTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) {
             [weak self] _ in
-            Task { @MainActor in self?.stepParticles() }
+            guard let me = self else { return }
+            Task { @MainActor in me.stepParticles() }
         }
     }
 

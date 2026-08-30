@@ -12,7 +12,7 @@ enum MenuBarIcon {
     /// Cache keyed on everything that changes the drawing. Rendering an
     /// NSImage every frame at 20fps would be wasteful; almost every tick
     /// reuses one of a handful of images.
-    private static var cache: [String: NSImage] = [:]
+    @MainActor private static var cache: [String: NSImage] = [:]
 
     @MainActor
     static func image(mood: Mood, blinking: Bool, gaze: CGFloat,
