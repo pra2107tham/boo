@@ -14,14 +14,28 @@ final class BooState: ObservableObject {
     private var strainedSince: Date?
 
     private let metrics = SystemMetrics()
+    private var activity = Activity()
     private let engine = MoodEngine()
     private var timer: Timer?
+    private var activityTimer: Timer?
 
     init() {
         tick()
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             guard let me = self else { return }
             Task { @MainActor in me.tick() }
+        }
+        // Typing has to be noticed quickly or it reads as broken: a 2s poll
+        // meant Boo could react a full two seconds after you started. The
+        // activity read is cheap, so it gets its own faster tick while the
+        // system metrics stay on 2s.
+        activityTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) {
+            [weak self] _ in
+            guard let me = self else { return }
+            Task { @MainActor in
+                me.personality.observe(me.activity.read(cpu: me.snapshot.cpu),
+                                       snapshot: me.snapshot)
+            }
         }
         observePowerAndSleep()
     }
@@ -38,6 +52,7 @@ final class BooState: ObservableObject {
 
         // Dance whenever sound is actually playing.
         personality.setDancing(s.isPlayingAudio)
+
 
         // Notice a long stretch of heavy load ending: that's a build or an
         // export finishing, and it's the moment worth celebrating.
