@@ -46,9 +46,21 @@ cd web && npm install && npm run dev
 Download the latest DMG from [Releases](https://github.com/pra2107tham/boo/releases),
 open it, and drag Boo to Applications.
 
-Boo is not notarised by Apple — that needs a paid developer account — so the first
-time you open it macOS will warn you. **Right-click the app and choose Open**, then
-confirm once. It launches normally after that.
+macOS will say it cannot verify Boo. That is Gatekeeper: it says the same about every
+app not notarised by Apple, which needs a paid developer account. Boo is open source,
+so you can read every line it runs.
+
+After dragging it to Applications, run this once:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Boo.app
+```
+
+That removes the "downloaded from the internet" flag, and Boo opens normally from then on.
+
+If you would rather not use Terminal: right-click Boo in Applications and choose **Open**,
+then confirm. If macOS only offers "Move to Trash", open System Settings → Privacy &
+Security and click **Open Anyway**.
 
 Or build it yourself:
 

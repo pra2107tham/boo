@@ -8,10 +8,10 @@ import AppKit
 /// actual icon macOS already has for the running app. It is always correct,
 /// always current, and covers apps nobody thought to special-case.
 enum SourceIcon {
-    private static var cache: [String: NSImage] = [:]
+    @MainActor private static var cache: [String: NSImage] = [:]
 
     /// Icon for a named app, or nil when it can't be found.
-    static func image(for appName: String) -> NSImage? {
+    @MainActor static func image(for appName: String) -> NSImage? {
         if let hit = cache[appName] { return hit }
 
         // Prefer a running instance: cheapest, and it is by definition the

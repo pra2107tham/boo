@@ -20,12 +20,14 @@ final class BooState: ObservableObject {
     init() {
         tick()
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.tick() }
+            guard let me = self else { return }
+            Task { @MainActor in me.tick() }
         }
         observePowerAndSleep()
     }
 
-    deinit { timer?.invalidate() }
+    // No deinit teardown: the poll timer cannot be touched from a
+    // nonisolated deinit, and BooState lives for the whole app run.
 
     private func tick() {
         let s = metrics.read()
@@ -63,11 +65,13 @@ final class BooState: ObservableObject {
         let center = NSWorkspace.shared.notificationCenter
         center.addObserver(forName: NSWorkspace.screensDidSleepNotification,
                            object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.animator.animating = false }
+            guard let me = self else { return }
+            Task { @MainActor in me.animator.animating = false }
         }
         center.addObserver(forName: NSWorkspace.screensDidWakeNotification,
                            object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.animator.animating = true }
+            guard let me = self else { return }
+            Task { @MainActor in me.animator.animating = true }
         }
     }
 
@@ -92,7 +96,7 @@ final class BooState: ObservableObject {
 
     var readings: [Reading] {
         var rows: [Reading] = [
-            .percent("Processor", snapshot.cpu),
+            .percent("CPU", snapshot.cpu),
             .percent("Memory", snapshot.memory)
         ]
         if let b = snapshot.battery {

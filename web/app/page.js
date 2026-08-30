@@ -2,7 +2,7 @@ import './globals.css';
 import { Ghost, Bloom } from './Ghost';
 
 const REPO = 'https://github.com/pra2107tham/boo';
-const DMG = `${REPO}/releases/latest/download/Boo-1.0.0.dmg`;
+const DMG = `${REPO}/releases/latest`;
 
 const MOODS = [
   { name: 'Calm', when: 'CPU under 30%', tint: 'calm', note: 'green heart, slow float' },
@@ -158,22 +158,51 @@ export default function Home() {
           >
             <p className="eyebrow" style={{ marginBottom: 12 }}>Installing</p>
             <h3 className="display" style={{ fontSize: 27, margin: '0 0 16px' }}>
-              It is not signed by Apple yet.
+              macOS will say it can’t verify Boo.
             </h3>
-            <p style={{ fontSize: 14.5, color: 'var(--ink-dim)', lineHeight: 1.7, margin: '0 0 18px' }}>
-              Notarising needs a paid developer account, so the first time you open Boo macOS
-              will warn you. Right-click the app and choose <strong style={{ color: 'var(--ink)' }}>Open</strong>,
-              then confirm once. After that it launches normally.
+            <p style={{ fontSize: 14.5, color: 'var(--ink-dim)', lineHeight: 1.7, margin: '0 0 20px' }}>
+              That is Gatekeeper, and it says the same thing about every app not notarised by
+              Apple — which needs a paid developer account. Boo is open source, so you can read
+              every line it runs. Here is how to get past it.
             </p>
-            <p style={{ fontSize: 14.5, color: 'var(--ink-dim)', lineHeight: 1.7, margin: 0 }}>
-              Prefer to build it yourself? That is three lines:
+
+            <ol style={{ margin: 0, paddingLeft: 20, color: 'var(--ink-dim)', fontSize: 14.5, lineHeight: 1.85 }}>
+              <li>Open the DMG and drag <strong style={{ color: 'var(--ink)' }}>Boo</strong> to Applications.</li>
+              <li>
+                Open Terminal and run this once — it removes the “downloaded from the
+                internet” flag:
+              </li>
+            </ol>
+            <pre
+              className="mono"
+              style={{
+                background: 'rgba(0,0,0,0.42)', border: '1px solid var(--line)',
+                borderRadius: 12, padding: '16px 18px', fontSize: 12.5,
+                color: 'var(--ink)', overflowX: 'auto', margin: '12px 0 20px',
+              }}
+            >xattr -dr com.apple.quarantine /Applications/Boo.app</pre>
+            <ol start={3} style={{ margin: 0, paddingLeft: 20, color: 'var(--ink-dim)', fontSize: 14.5, lineHeight: 1.85 }}>
+              <li>Open Boo normally. It will not ask again.</li>
+            </ol>
+
+            <p style={{ fontSize: 13.5, color: 'var(--ink-faint)', lineHeight: 1.7, margin: '22px 0 0' }}>
+              Rather not run a Terminal command? Right-click Boo in Applications, choose
+              <strong style={{ color: 'var(--ink-dim)' }}> Open</strong>, and confirm once. If macOS
+              only offers “Move to Trash”, go to System Settings → Privacy &amp; Security and
+              click <strong style={{ color: 'var(--ink-dim)' }}>Open Anyway</strong>.
+            </p>
+
+            <div style={{ height: 1, background: 'var(--line)', margin: '26px 0 22px' }} />
+
+            <p style={{ fontSize: 14.5, color: 'var(--ink-dim)', lineHeight: 1.7, margin: '0 0 12px' }}>
+              Or skip all of it and build from source — nothing to trust but the code:
             </p>
             <pre
               className="mono"
               style={{
                 background: 'rgba(0,0,0,0.42)', border: '1px solid var(--line)',
                 borderRadius: 12, padding: '16px 18px', fontSize: 12.5,
-                color: 'var(--ink-dim)', overflowX: 'auto', marginTop: 14,
+                color: 'var(--ink-dim)', overflowX: 'auto', margin: 0,
               }}
             >{`git clone ${REPO}.git
 cd boo

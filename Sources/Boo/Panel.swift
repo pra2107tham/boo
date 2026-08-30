@@ -123,6 +123,10 @@ struct Panel: View {
                         .font(Theme.label(9))
                         .tracking(1.1)
                         .foregroundStyle(.white.opacity(0.42))
+                        .lineLimit(1)
+                        // Shrink rather than truncate: a clipped label
+                        // ("PROCES…") tells you nothing.
+                        .minimumScaleFactor(0.75)
                     // A hairline bar, not a chunky one — the number is the
                     // message, the bar is only a glance-check.
                     Capsule()
@@ -184,60 +188,89 @@ struct Panel: View {
     // MARK: - Footer
 
     private var footer: some View {
-        HStack(spacing: 16) {
-            Check(label: "Desktop", isOn: $desktop.isVisible)
-            Check(label: "Spooky", isOn: Binding(
-                get: { personality.scaresEnabled },
-                set: { personality.scaresEnabled = $0 }))
-            Check(label: "Nudges", isOn: Binding(
-                get: { personality.swoopEnabled },
-                set: { personality.swoopEnabled = $0 }))
-            Spacer()
-            Button("Quit") { NSApplication.shared.terminate(nil) }
-                .buttonStyle(.plain)
-                .font(Theme.body(11))
-                .foregroundStyle(.white.opacity(0.4))
+        // Three labelled checkboxes plus Quit never fit in 272pt — the
+        // words truncated to "Des… Sp… Nu…", which is worse than no label.
+        // Icon toggles read instantly, and the name is spelled out on
+        // hover for anyone who needs it.
+        HStack(spacing: 6) {
+            Toggle3(icon: "macwindow.on.rectangle",
+                    name: "Show on desktop",
+                    help: "Let Boo float on your desktop",
+                    isOn: $desktop.isVisible)
+            Toggle3(icon: "theatermasks.fill",
+                    name: "Spooky",
+                    help: "Boo startles you once in a while",
+                    isOn: Binding(get: { personality.scaresEnabled },
+                                  set: { personality.scaresEnabled = $0 }))
+            Toggle3(icon: "bell.fill",
+                    name: "Focus nudges",
+                    help: "Boo swoops in every few minutes to say focus",
+                    isOn: Binding(get: { personality.swoopEnabled },
+                                  set: { personality.swoopEnabled = $0 }))
+            Spacer(minLength: 4)
+            Button {
+                NSApplication.shared.terminate(nil)
+            } label: {
+                Image(systemName: "power")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.4))
+                    .frame(width: 28, height: 26)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Quit Boo")
         }
-        .padding(.horizontal, 22)
-        .padding(.top, 10)
-        .padding(.bottom, 13)
+        .padding(.horizontal, 18)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
         .overlay(alignment: .top) {
             Rectangle().fill(Color.white.opacity(0.07)).frame(height: 1)
         }
     }
 }
 
-/// A checkbox that matches the panel rather than the system's blue one,
-/// which looks wrong against the glass.
-private struct Check: View {
-    let label: String
+/// An icon toggle that says what it is on hover.
+///
+/// Lit means on. The label appears beside the icon while hovered, so the
+/// row stays compact but nothing is ever a mystery — and the system
+/// tooltip carries the longer explanation.
+private struct Toggle3: View {
+    let icon: String
+    let name: String
+    let help: String
     @Binding var isOn: Bool
+    @State private var hovering = false
 
     var body: some View {
         Button {
             isOn.toggle()
         } label: {
-            HStack(spacing: 6) {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(isOn ? HeartTint.idle.color : .clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .strokeBorder(Color.white.opacity(isOn ? 0 : 0.22), lineWidth: 1)
-                    )
-                    .overlay {
-                        if isOn {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 7, weight: .bold))
-                                .foregroundStyle(Color.black.opacity(0.7))
-                        }
-                    }
-                    .frame(width: 13, height: 13)
-                Text(label)
-                    .font(Theme.body(11))
-                    .foregroundStyle(.white.opacity(isOn ? 0.72 : 0.45))
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .medium))
+                if hovering {
+                    Text(name)
+                        .font(Theme.body(10.5))
+                        .lineLimit(1)
+                        .fixedSize()
+                }
             }
+            .foregroundStyle(isOn ? Color.black.opacity(0.78) : .white.opacity(0.5))
+            .padding(.horizontal, hovering ? 9 : 7)
+            .frame(height: 26)
+            .background(
+                Capsule().fill(isOn ? HeartTint.idle.color
+                                    : Color.white.opacity(hovering ? 0.10 : 0.05))
+            )
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .help(help)
+        .onHover { h in
+            // Only the hovered chip expands, so the row never reflows into
+            // a wider panel than it started as.
+            withAnimation(.easeOut(duration: 0.14)) { hovering = h }
+        }
     }
 }
 
