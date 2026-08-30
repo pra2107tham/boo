@@ -15,6 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pin the toolchain so a runner-image bump cannot silently change
+      # how strictly the concurrency rules are enforced.
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app || true
+
       - name: Run checks
         run: swift run Boo --self-check
 

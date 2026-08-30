@@ -28,6 +28,15 @@ struct Snapshot {
 final class SystemMetrics {
     /// CPU load is a delta between two readings, so the previous one is state.
     private var lastTicks: (user: UInt32, system: UInt32, idle: UInt32, nice: UInt32)?
+    /// Page size is fixed for the life of the process, so read the
+    /// imported global once instead of touching shared mutable state on
+    /// every poll.
+    private static let pageSize: vm_size_t = {
+        var size = vm_size_t(0)
+        host_page_size(mach_host_self(), &size)
+        return size == 0 ? 16384 : size
+    }()
+
     private var topProcess = TopProcess()
     private var audio = AudioState()
 
@@ -100,8 +109,7 @@ final class SystemMetrics {
         // cheaply. Free and purgeable pages don't count against you.
         let used = Double(stats.active_count) + Double(stats.wire_count)
                  + Double(stats.compressor_page_count)
-        let total = Double(ProcessInfo.processInfo.physicalMemory)
-                  / Double(vm_kernel_page_size)
+        let total = Double(ProcessInfo.processInfo.physicalMemory) / Double(Self.pageSize)
         guard total > 0 else { return 0 }
         return min(100, max(0, used / total * 100))
     }

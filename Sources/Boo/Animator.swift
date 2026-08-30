@@ -33,11 +33,9 @@ final class Animator: ObservableObject {
     private var floatTimer: Timer?
 
     init() { start() }
-    deinit {
-        blinkTimer?.invalidate()
-        heartTimer?.invalidate()
-        floatTimer?.invalidate()
-    }
+    // No deinit teardown: timers cannot be touched from a nonisolated
+    // deinit, and these objects live for the whole app run - the timers
+    // die with the process. stop() handles the only real teardown case.
 
     private func start() {
         scheduleBlink()
@@ -46,9 +44,9 @@ final class Animator: ObservableObject {
         // breathing rather than motion you consciously notice.
         floatTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 20, repeats: true) {
             [weak self] _ in
+            guard let me = self else { return }
             Task { @MainActor in
-                guard let self else { return }
-                self.float = sin(Date().timeIntervalSince1970 / 3 * .pi * 2) * 0.5
+                me.float = sin(Date().timeIntervalSince1970 / 3 * .pi * 2) * 0.5
             }
         }
     }
@@ -71,10 +69,11 @@ final class Animator: ObservableObject {
         let delay = Double.random(in: 4...7)
         blinkTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) {
             [weak self] _ in
+            guard let me = self else { return }
             Task { @MainActor in
-                guard let self, self.animating else { return }
-                self.blink()
-                self.scheduleBlink()
+                guard me.animating else { return }
+                me.blink()
+                me.scheduleBlink()
             }
         }
     }
@@ -102,7 +101,8 @@ final class Animator: ObservableObject {
         guard animating else { return }
         heartTimer = Timer.scheduledTimer(withTimeInterval: beatInterval, repeats: true) {
             [weak self] _ in
-            Task { @MainActor in self?.beat() }
+            guard let me = self else { return }
+            Task { @MainActor in me.beat() }
         }
     }
 

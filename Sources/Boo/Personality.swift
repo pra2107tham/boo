@@ -246,15 +246,9 @@ final class Personality: ObservableObject {
         }
     }
 
-    deinit {
-        particleTimer?.invalidate()
-        cursorTimer?.invalidate()
-        idleTimer?.invalidate()
-        danceTimer?.invalidate()
-        scareTimer?.invalidate()
-        swoopTimer?.invalidate()
-        idleTimer2?.invalidate()
-    }
+    // No deinit teardown: timers cannot be touched from a nonisolated
+    // deinit, and these objects live for the whole app run - the timers
+    // die with the process. stop() handles the only real teardown case.
 
     /// Scares land somewhere between 20 and 50 minutes apart, and never
     /// while you're away — startling an empty chair is pointless, and
