@@ -1,0 +1,34 @@
+name: Release
+
+# Tag a version and the DMG builds itself and attaches to the release,
+# so the website's download link always points at something real.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run checks
+        run: swift run Boo --self-check
+
+      - name: Build app and DMG
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ./scripts/build-app.sh "${VERSION:-1.0.0}"
+
+      - name: Attach DMG to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.dmg
+          body: |
+            Download the DMG below, open it, and drag Boo to Applications.
+
+            Boo is not notarised by Apple, so the first launch needs a
+            right-click > Open. After that it opens normally.

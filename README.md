@@ -13,7 +13,44 @@ it readable at 18 pixels.
 Click it for a small panel: CPU, memory, battery, audio output. Nothing else. It reports, it
 doesn't nag — no badges, no "issues found", no upgrade prompt.
 
+Tick **On desktop** in that panel and Boo hops out of the menu bar into a floating window you
+can drag anywhere. It stays on top, follows you between Spaces, and remembers where you put it.
+Right-click it to send it back.
+
+## What it does when it's out
+
+- **Watches your cursor.** Eyes follow your pointer around the screen.
+- **Click it** and it showers hearts.
+- **Dances** when music is playing — any music, through any device.
+- **Hover for a couple of seconds** and it takes it as petting.
+- **Drag it** and it squashes, then wobbles when you let go.
+- **Falls asleep** if you leave for five minutes, wakes when you come back.
+- **Cheers** when a long build finishes.
+- **Startles you** now and then, if you tick **Spooky**. Off by default.
+- **Swoops in every five minutes** to whisper "ssshhh… focus". Tick **Nudges** to turn it off.
+- **Eight idle antics** — spins, yawns, sneezes, wobbles, bounces, stargazes — picked at
+  random every 25–70 seconds so it never reads as a loop.
+- **Shows what is playing** as the real app icon in a thought cloud, so you can see at a
+  glance whether the sound is Spotify, Music, a browser tab or a call.
+
+## Website
+
+`web/` is the landing page — Next.js, statically exported.
+
+```bash
+cd web && npm install && npm run dev
+```
+
 ## Install
+
+Download the latest DMG from [Releases](https://github.com/pra2107tham/boo/releases),
+open it, and drag Boo to Applications.
+
+Boo is not notarised by Apple — that needs a paid developer account — so the first
+time you open it macOS will warn you. **Right-click the app and choose Open**, then
+confirm once. It launches normally after that.
+
+Or build it yourself:
 
 ```bash
 git clone https://github.com/pra2107tham/boo.git
@@ -23,6 +60,12 @@ swift run -c release
 
 Needs macOS 14 or later. No permissions, no entitlements, no login item — every signal comes
 from a public API that asks you for nothing.
+
+To build the app bundle and DMG locally:
+
+```bash
+./scripts/build-app.sh 1.0.0
+```
 
 ## Why it's light
 
@@ -36,6 +79,15 @@ The full design — character sheet, panel, and build spec — is at
 [claude.ai/code/artifact/a010c2c2-812b-438c-a380-49f803af2b04](https://claude.ai/code/artifact/a010c2c2-812b-438c-a380-49f803af2b04).
 
 `brief/` holds the prompts used to explore the character, if you want to see how Boo was found.
+
+## Checks
+
+```bash
+swift run Boo --self-check
+```
+
+Covers the parts that fail quietly: threshold flapping, headphone name matching,
+and the top-process baseline.
 
 ## Adding a mood
 

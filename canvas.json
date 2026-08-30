@@ -1,11 +1,13 @@
 {
   "artboards": [
-    { "file": "Main.dc.html",    "x": 0,    "y": 0, "w": 900, "h": 1000, "title": "Boo — character" },
-    { "file": "Popover.dc.html", "x": 1000, "y": 0, "w": 900, "h": 860,  "title": "The panel" },
-    { "file": "Spec.dc.html",    "x": 2000, "y": 0, "w": 900, "h": 1080, "title": "Build spec" }
+    { "file": "Popover.dc.html", "x": 0,    "y": 0,    "w": 980, "h": 1180, "title": "Panel — redrawn" },
+    { "file": "Audio.dc.html",   "x": 1080, "y": 0,    "w": 980, "h": 1080, "title": "Audio fix" },
+    { "file": "Main.dc.html",    "x": 2160, "y": 0,    "w": 900, "h": 1000, "title": "Boo — character" },
+    { "file": "Spec.dc.html",    "x": 3160, "y": 0,    "w": 900, "h": 1080, "title": "Build spec" }
   ],
   "annotations": [
-    { "id": "brief", "x": 0, "y": -210, "w": 700, "text": "Boo — a ghost for your menu bar\n\nThe rule that holds the whole thing together: the EYES carry the mood, the HEART carries the load. Neither has to do too much, so both stay readable at 18px.\n\nCharacter sheet → the panel → build spec. Say go and I write the Swift." }
+    { "id": "brief", "x": 0, "y": -230, "w": 780, "text": "Boo — panel redesign + the audio fix\n\nTwo problems, both here as design before any code.\n\nLEFT: the panel redrawn. Blurred mood-coloured bloom behind dark glass, editorial serif for the sentence, tabular mono for the numbers. Three figures side by side instead of four stacked rows.\n\nRIGHT: why it always thinks music is playing, diagnosed on your machine, plus every edge case the fix has to handle." },
+    { "id": "no-code", "x": 1080, "y": -100, "w": 420, "text": "Diagnosed, not yet built — say go and I write it." }
   ],
   "launch": { "view": "canvas" }
 }
