@@ -60,10 +60,10 @@ struct ScratchBubbles: View {
     let visible: Bool
 
     /// Fixed forever. Nothing in this row is allowed to resize.
-    private let diameter: CGFloat = 38
+    private let diameter: CGFloat = 30
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             ForEach(0..<3, id: \.self) { i in
                 Bubble(index: i,
                        text: pad.notes[i],
@@ -94,12 +94,27 @@ private struct Bubble: View {
     let onClear: () -> Void
 
     @State private var hovering = false
+    @State private var pressed = false
+    @State private var bounce: CGFloat = 1
 
     private var isEmpty: Bool { text.isEmpty }
     private var slot: (icon: String, name: String) { Scratchpad.slots[index] }
 
+    /// Squash on press, overshoot on release. Without the overshoot a
+    /// click reads as a state change rather than something being pushed.
+    private func pop() {
+        withAnimation(.spring(response: 0.12, dampingFraction: 0.5)) { bounce = 0.82 }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(90))
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.42)) { bounce = 1 }
+        }
+    }
+
     var body: some View {
-        Button(action: onTap) {
+        Button {
+            pop()
+            onTap()
+        } label: {
             ZStack {
                 Circle()
                     .fill(Color(red: 0.07, green: 0.07, blue: 0.08))
@@ -110,24 +125,25 @@ private struct Bubble: View {
 
                 if isEmpty {
                     Image(systemName: slot.icon)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white.opacity(hovering ? 0.85 : 0.55))
                 } else {
                     // A filled slot shows its first letter, so you can tell
                     // the three apart without opening any of them.
                     Text(String(text.prefix(1)).uppercased())
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
                 }
             }
             .frame(width: diameter, height: diameter)
+            .scaleEffect(bounce * (hovering ? 1.08 : 1))
             // A filled slot gets a small dot, the way a live indicator works
             // on a docked strip — visible without reading anything.
             .overlay(alignment: .topTrailing) {
                 if !isEmpty {
                     Circle()
                         .fill(HeartTint.idle.color)
-                        .frame(width: 8, height: 8)
+                        .frame(width: 7, height: 7)
                         .overlay(Circle().strokeBorder(Color(red: 0.07, green: 0.07,
                                                              blue: 0.08), lineWidth: 1.5))
                         .offset(x: 1, y: -1)
@@ -166,7 +182,7 @@ struct ScratchEditor: View {
     private var slot: (icon: String, name: String) { Scratchpad.slots[index] }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Image(systemName: slot.icon)
                     .font(.system(size: 10, weight: .medium))
@@ -195,13 +211,13 @@ struct ScratchEditor: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 12.5, design: .rounded))
                 .foregroundStyle(.white)
-                .lineLimit(1...4)
+                .lineLimit(1...3)
                 .focused($focused)
                 .onSubmit(onClose)
         }
-        .padding(.horizontal, 13)
-        .padding(.vertical, 11)
-        .frame(width: 178)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .frame(width: 168)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color(red: 0.07, green: 0.07, blue: 0.08))

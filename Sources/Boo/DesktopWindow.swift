@@ -12,7 +12,7 @@ final class DesktopWindow: NSPanel {
     private static let originKey = "desktopBooOrigin"
 
     init(content: NSView) {
-        super.init(contentRect: NSRect(x: 0, y: 0, width: 260, height: 330),
+        super.init(contentRect: NSRect(x: 0, y: 0, width: 220, height: 290),
                    // .nonactivatingPanel keeps your current app focused when
                    // you drag Boo — grabbing the ghost shouldn't steal focus
                    // from whatever you're typing in.
@@ -58,7 +58,7 @@ final class DesktopWindow: NSPanel {
         // resolution change). Fall back to centre rather than stranding it.
         guard NSScreen.screens.contains(where: {
             $0.visibleFrame.intersects(NSRect(origin: point,
-                                              size: CGSize(width: 260, height: 330)))
+                                              size: CGSize(width: 220, height: 290)))
         }) else {
             centerOnScreen()
             return
@@ -106,7 +106,7 @@ final class DesktopBoo: ObservableObject {
         let view = NSHostingView(rootView: DesktopFace(state: state,
                                                        personality: personality,
                                                        owner: self))
-        view.frame = NSRect(x: 0, y: 0, width: 260, height: 330)
+        view.frame = NSRect(x: 0, y: 0, width: 220, height: 290)
         let p = DesktopWindow(content: view)
         p.orderFront(nil)
         panel = p
@@ -229,14 +229,14 @@ private struct InteractiveRegion: Shape {
     func path(in rect: CGRect) -> Path {
         var p = Path()
         let cx = rect.midX, cy = rect.midY
-        // Ghost, sitting high so the stack has room to grow beneath it.
-        p.addEllipse(in: CGRect(x: cx - 56, y: cy - 134, width: 112, height: 112))
-        // Bubble row
-        p.addRoundedRect(in: CGRect(x: cx - 73, y: cy - 15, width: 146, height: 50),
-                         cornerSize: CGSize(width: 25, height: 25))
-        // Editor card, directly below the row, only while open
+        // Ghost, centred on dy -46 to match where it renders.
+        p.addEllipse(in: CGRect(x: cx - 54, y: cy - 100, width: 108, height: 108))
+        // Bubble row, centred on dy +27 (106pt wide, 30pt tall + slop)
+        p.addRoundedRect(in: CGRect(x: cx - 57, y: cy + 8, width: 114, height: 38),
+                         cornerSize: CGSize(width: 19, height: 19))
+        // Editor card, centred on dy +89, only while open
         if editing {
-            p.addRoundedRect(in: CGRect(x: cx - 95, y: cy + 46, width: 190, height: 100),
+            p.addRoundedRect(in: CGRect(x: cx - 88, y: cy + 50, width: 176, height: 82),
                              cornerSize: CGSize(width: 14, height: 14))
         }
         return p
@@ -282,7 +282,7 @@ struct DesktopFace: View {
             bubbleRow
             editorCard
         }
-        .frame(width: 260, height: 330)
+        .frame(width: 220, height: 290)
         .contentShape(InteractiveRegion(editing: editingNote != nil))
         .onTapGesture(count: 2) { personality.orbitCursor() }
         .onTapGesture { personality.showerHearts() }
@@ -330,7 +330,7 @@ struct DesktopFace: View {
                                      + personality.dragTilt), anchor: .bottom)
             .rotation3DEffect(.degrees(personality.spin), axis: (x: 0, y: 1, z: 0))
             .scaleEffect(personality.scale)
-            .offset(y: animator.float * 3 + hop - 78)
+            .offset(y: animator.float * 3 + hop - 46)
             .shadow(color: .black.opacity(0.28), radius: 10, y: 5)
     }
 
@@ -339,21 +339,21 @@ struct DesktopFace: View {
         if personality.act == .orbiting {
             OrbitTrail(points: personality.trail)
                 .frame(width: 120, height: 120)
-                .offset(y: -78)
+                .offset(y: -46)
         }
     }
 
     private var particles: some View {
         ParticleLayer(particles: personality.particles)
             .frame(width: 120, height: 120)
-            .offset(y: -78)
+            .offset(y: -46)
     }
 
     @ViewBuilder
     private var thoughtCloud: some View {
         if state.mood == .tunedIn {
             ThoughtBubble(appName: state.snapshot.audioSource, phase: bubblePhase)
-                .offset(x: 46, y: -118)
+                .offset(x: 44, y: -86)
         }
     }
 
@@ -368,7 +368,7 @@ struct DesktopFace: View {
                 .background(Color.black.opacity(0.72), in: Capsule())
                 .overlay(Capsule().strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
                 .fixedSize()
-                .offset(y: -134)
+                .offset(y: -102)
                 .transition(.scale(scale: 0.8).combined(with: .opacity))
         }
     }
@@ -377,14 +377,14 @@ struct DesktopFace: View {
         ScratchBubbles(pad: owner.scratchpad,
                        editing: $editingNote,
                        visible: bubblesShown)
-            .offset(y: 10)
+            .offset(y: 27)
     }
 
     @ViewBuilder
     private var editorCard: some View {
         if let i = editingNote {
             ScratchEditor(pad: owner.scratchpad, index: i) { editingNote = nil }
-                .offset(y: 96)
+                .offset(y: 89)
                 // Grows downward out of the row it belongs to, keeping
                 // Boo's whole layout on one vertical axis.
                 .transition(.scale(scale: 0.9, anchor: .top).combined(with: .opacity))
