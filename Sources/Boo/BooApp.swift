@@ -14,6 +14,7 @@ final class BooState: ObservableObject {
     private var strainedSince: Date?
 
     private let metrics = SystemMetrics()
+    private var activity = Activity()
     private let engine = MoodEngine()
     private var timer: Timer?
 
@@ -38,6 +39,9 @@ final class BooState: ObservableObject {
 
         // Dance whenever sound is actually playing.
         personality.setDancing(s.isPlayingAudio)
+
+        // Everything that reacts to what you and the Mac are doing.
+        personality.observe(activity.read(cpu: s.cpu), snapshot: s)
 
         // Notice a long stretch of heavy load ending: that's a build or an
         // export finishing, and it's the moment worth celebrating.

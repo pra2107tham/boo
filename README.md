@@ -34,6 +34,13 @@ Right-click it to send it back.
   three laps with a comet trail, and drifts home
 - **Three scratchpad bubbles** appear on hover — park a room number, a name, a command.
   Click to type, right-click to copy or clear. They survive restarts.
+- **Types along with you** — puts on glasses, sprouts arms, and hammers a tiny keyboard
+  in time with your actual typing speed
+- **Shivers** when the fans spin up, **shelters under an umbrella** when the disk is
+  nearly full, **makes a drink** when you have been away a while, **wears a party hat**
+  on Friday evenings and uptime records
+- **Nudges you about focus** only after a genuine break in a long stretch, and tells you
+  how long you were going
 - **Shows what is playing** as the real app icon in a thought cloud, so you can see at a
   glance whether the sound is Spotify, Music, a browser tab or a call.
 

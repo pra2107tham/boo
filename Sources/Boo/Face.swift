@@ -47,6 +47,8 @@ struct Face: View {
     /// While peeking: true when hiding behind the LEFT edge, so the visible
     /// eye is the one facing the middle of the screen.
     var peekFromLeft = false
+    /// While typing: which hand is currently down on the keys.
+    var leftHandDown = true
     var heartScale: CGFloat = 1
     var bodyColor = Color(red: 0.969, green: 0.957, blue: 0.925)  // #F7F4EC
     /// Colour painted into the eyes when not punching through. Only used
@@ -85,6 +87,15 @@ struct Face: View {
                 drawEyes(ctx, s: s, p: p)
             }
             if !punchThrough { drawHeart(ctx, s: s) }
+
+            switch act {
+            case .typing:     drawGlasses(ctx, s: s, p: p); drawKeyboard(ctx, s: s)
+            case .shivering:  drawShiver(ctx, s: s)
+            case .sheltering: drawUmbrella(ctx, s: s)
+            case .sipping:    drawMug(ctx, s: s)
+            case .partying:   drawHat(ctx, s: s)
+            default: break
+            }
 
             switch mood {
             case .strained: drawSweat(ctx, s: s)
@@ -231,6 +242,51 @@ struct Face: View {
                 ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
             }
             return
+        case .typing:
+            // Eyes behind round glasses: normal pupils, lenses drawn later
+            // so they sit over the top.
+            for cx in [lx, rx] {
+                let r = CGRect(x: (cx - 3.6) * s, y: (y - 3.8) * s,
+                               width: 7.2 * s, height: 7.6 * s)
+                ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
+            }
+            return
+        case .shivering:
+            // Squeezed shut against the cold.
+            for cx in [lx, rx] {
+                var l = Path()
+                l.move(to: p(cx - 4, y))
+                l.addLine(to: p(cx + 4, y))
+                ctx.stroke(l, with: .color(voidColor),
+                           style: .init(lineWidth: 3.2 * s, lineCap: .round))
+            }
+            return
+        case .sheltering:
+            // Worried: small eyes, raised.
+            for cx in [lx, rx] {
+                let r = CGRect(x: (cx - 3.4) * s, y: (y - 4.4) * s,
+                               width: 6.8 * s, height: 7.2 * s)
+                ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
+            }
+            return
+        case .sipping, .partying:
+            // Content, happy arcs.
+            for cx in [lx, rx] {
+                var arc = Path()
+                arc.move(to: p(cx - 4.2, y + 1.4))
+                arc.addQuadCurve(to: p(cx + 4.2, y + 1.4), control: p(cx, y - 3.8))
+                ctx.stroke(arc, with: .color(voidColor),
+                           style: .init(lineWidth: 3.2 * s, lineCap: .round))
+            }
+            return
+        case .watching:
+            // Wide and tracking.
+            for cx in [lx, rx] {
+                let r = CGRect(x: (cx - 5) * s, y: (y - 5.2) * s,
+                               width: 10 * s, height: 10.4 * s)
+                ctx.fill(Path(ellipseIn: r), with: .color(voidColor))
+            }
+            return
         case .dancing, .none, .spinning, .wobbling, .bouncing:
             break
         }
@@ -315,6 +371,116 @@ struct Face: View {
                                               width: 9.5 * s, height: 15 * s),
                           cornerRadius: 4.7 * s), with: .color(bodyColor))
         }
+    }
+
+    /// Round glasses, drawn over the eyes.
+    private func drawGlasses(_ ctx: GraphicsContext, s: CGFloat,
+                             p: (CGFloat, CGFloat) -> CGPoint) {
+        let y: CGFloat = 31 + eyeOffsetY
+        for cx in [23 + eyeOffset, 41 + eyeOffset] {
+            let lens = Path(ellipseIn: CGRect(x: (cx - 7) * s, y: (y - 7) * s,
+                                              width: 14 * s, height: 14 * s))
+            ctx.fill(lens, with: .color(Color(red: 0.47, green: 0.72, blue: 0.87)
+                .opacity(0.16)))
+            ctx.stroke(lens, with: .color(voidColor), lineWidth: 1.8 * s)
+        }
+        // Bridge, and arms going back past the head.
+        var bridge = Path()
+        bridge.move(to: p(30 + eyeOffset, y)); bridge.addLine(to: p(34 + eyeOffset, y))
+        ctx.stroke(bridge, with: .color(voidColor), lineWidth: 1.6 * s)
+    }
+
+    /// Two stubby arms and a little keyboard. The hand that is down is the
+    /// one currently pressing a key.
+    private func drawKeyboard(_ ctx: GraphicsContext, s: CGFloat) {
+        let leftY: CGFloat = leftHandDown ? 57 : 53
+        let rightY: CGFloat = leftHandDown ? 53 : 57
+
+        for (x, endX, endY) in [(19.0, 14.0, leftY), (45.0, 50.0, rightY)] {
+            var arm = Path()
+            arm.move(to: CGPoint(x: x * s, y: 45 * s))
+            arm.addQuadCurve(to: CGPoint(x: endX * s, y: endY * s),
+                             control: CGPoint(x: (x + endX) / 2 * s, y: 50 * s))
+            ctx.stroke(arm, with: .color(bodyColor),
+                       style: .init(lineWidth: 4.4 * s, lineCap: .round))
+            ctx.fill(Path(ellipseIn: CGRect(x: (endX - 3.2) * s, y: (endY - 3.2) * s,
+                                            width: 6.4 * s, height: 6.4 * s)),
+                     with: .color(bodyColor))
+        }
+
+        // Keyboard body
+        ctx.fill(Path(roundedRect: CGRect(x: 8 * s, y: 59 * s,
+                                          width: 48 * s, height: 13 * s),
+                      cornerRadius: 2.5 * s),
+                 with: .color(Color(red: 0.13, green: 0.15, blue: 0.18)))
+        // Keys
+        for row in 0..<2 {
+            for col in 0..<6 {
+                let kx = 11 + CGFloat(col) * 7.4 + (row == 1 ? 2 : 0)
+                let ky = 61.5 + CGFloat(row) * 5
+                ctx.fill(Path(roundedRect: CGRect(x: kx * s, y: ky * s,
+                                                  width: 5.4 * s, height: 3.4 * s),
+                              cornerRadius: 0.8 * s),
+                         with: .color(Color(red: 0.24, green: 0.27, blue: 0.31)))
+            }
+        }
+    }
+
+    private func drawShiver(_ ctx: GraphicsContext, s: CGFloat) {
+        let cold = Color(red: 0.47, green: 0.72, blue: 0.87)
+        for (x, y) in [(8.0, 24.0), (8.0, 36.0), (56.0, 24.0), (56.0, 36.0)] {
+            var l = Path()
+            l.move(to: CGPoint(x: x * s, y: y * s))
+            l.addLine(to: CGPoint(x: (x < 32 ? x - 4 : x + 4) * s, y: (y - 2) * s))
+            ctx.stroke(l, with: .color(cold),
+                       style: .init(lineWidth: 1.8 * s, lineCap: .round))
+        }
+    }
+
+    private func drawUmbrella(_ ctx: GraphicsContext, s: CGFloat) {
+        var canopy = Path()
+        canopy.move(to: CGPoint(x: 14 * s, y: 14 * s))
+        canopy.addQuadCurve(to: CGPoint(x: 50 * s, y: 14 * s),
+                            control: CGPoint(x: 32 * s, y: -2 * s))
+        canopy.closeSubpath()
+        ctx.fill(canopy, with: .color(HeartTint.hot.color))
+        var stick = Path()
+        stick.move(to: CGPoint(x: 32 * s, y: 14 * s))
+        stick.addLine(to: CGPoint(x: 32 * s, y: 24 * s))
+        ctx.stroke(stick, with: .color(HeartTint.hot.color), lineWidth: 2 * s)
+    }
+
+    private func drawMug(_ ctx: GraphicsContext, s: CGFloat) {
+        let mug = Color(red: 0.24, green: 0.27, blue: 0.31)
+        ctx.fill(Path(roundedRect: CGRect(x: 44 * s, y: 42 * s,
+                                          width: 13 * s, height: 12 * s),
+                      cornerRadius: 2 * s), with: .color(mug))
+        var handle = Path()
+        handle.move(to: CGPoint(x: 57 * s, y: 45 * s))
+        handle.addQuadCurve(to: CGPoint(x: 57 * s, y: 51 * s),
+                            control: CGPoint(x: 62 * s, y: 48 * s))
+        ctx.stroke(handle, with: .color(mug), lineWidth: 1.8 * s)
+        // Steam
+        for x in [47.0, 52.0] {
+            var st = Path()
+            st.move(to: CGPoint(x: x * s, y: 40 * s))
+            st.addQuadCurve(to: CGPoint(x: x * s, y: 34 * s),
+                            control: CGPoint(x: (x + 2.4) * s, y: 37 * s))
+            ctx.stroke(st, with: .color(bodyColor.opacity(0.45)),
+                       style: .init(lineWidth: 1.5 * s, lineCap: .round))
+        }
+    }
+
+    private func drawHat(_ ctx: GraphicsContext, s: CGFloat) {
+        var hat = Path()
+        hat.move(to: CGPoint(x: 32 * s, y: -6 * s))
+        hat.addLine(to: CGPoint(x: 42 * s, y: 11 * s))
+        hat.addLine(to: CGPoint(x: 22 * s, y: 11 * s))
+        hat.closeSubpath()
+        ctx.fill(hat, with: .color(HeartTint.idle.color))
+        ctx.fill(Path(ellipseIn: CGRect(x: 29 * s, y: -10 * s,
+                                        width: 6 * s, height: 6 * s)),
+                 with: .color(HeartTint.busy.color))
     }
 
     private func drawSweat(_ ctx: GraphicsContext, s: CGFloat) {

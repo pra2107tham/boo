@@ -26,6 +26,12 @@ enum Act: Equatable {
     case stargazing    // drifting upward, looking up
     case orbiting      // tiny, doing laps around the cursor
     case scratchpad    // bubbles out, waiting for a note
+    case typing        // glasses on, hammering a tiny keyboard
+    case shivering     // fans spun up, it feels the draught
+    case sheltering    // disk filling, hiding under an umbrella
+    case sipping       // making itself a drink
+    case partying      // a milestone worth a hat
+    case watching      // following something you are dragging
 }
 
 /// The things Boo does on its own when nothing else is happening.
@@ -92,6 +98,12 @@ final class Personality: ObservableObject {
     @Published private(set) var peekSlide: CGFloat = 0
     /// Which side the door is on, so the visible eye is the far one.
     @Published private(set) var peekFromLeft = false
+    /// 0…1 typing pace, driving how fast the hands alternate.
+    @Published private(set) var typingIntensity: Double = 0
+    /// Which hand is down, for the keyboard animation.
+    @Published private(set) var leftHandDown = true
+    /// How long the current work stretch has run, for the focus nudge.
+    @Published private(set) var focusMinutes: Int = 0
     @Published private(set) var danceAngle: CGFloat = 0
 
     /// Set by the desktop window so cursor tracking knows where Boo is.
@@ -123,6 +135,11 @@ final class Personality: ObservableObject {
     private var scareTimer: Timer?
     private var swoopTimer: Timer?
     private var orbitTimer: Timer?
+    private var handTimer: Timer?
+    /// When the current stretch of typing began, nil when not in one.
+    private var workStartedAt: Date?
+    /// So a milestone only fires once per session.
+    private var milestonesSeen: Set<String> = []
     private var idleTimer2: Timer?
 
     /// What Boo says when it swoops over. Short, ghostly, never bossy.
@@ -357,6 +374,122 @@ final class Personality: ObservableObject {
                 if me.act == .none { me.peek() }
                 me.scheduleScare()
             }
+        }
+    }
+
+    // MARK: - Reactions to what you and the Mac are doing
+
+    /// Fed every poll. Each behaviour reacts to something real rather than
+    /// firing on a timer — that is what separates a companion from a
+    /// screensaver.
+    func observe(_ a: Activity.Reading, snapshot: Snapshot) {
+        typingIntensity = a.typingIntensity
+
+        // Track the work stretch, so the focus nudge can be earned.
+        if a.isTyping {
+            if workStartedAt == nil { workStartedAt = Date() }
+            focusMinutes = Int(Date().timeIntervalSince(workStartedAt ?? Date()) / 60)
+        } else if a.idleSeconds > 120 {
+            workStartedAt = nil          // long enough away to reset
+            focusMinutes = 0
+        }
+
+        // Only interrupt an idle Boo. Never talk over a performance.
+        guard act == .none || act == .typing || act == .dancing else { return }
+
+        if a.isTyping {
+            if act != .typing { startTyping() }
+            return
+        }
+        if act == .typing { stopTyping() }
+
+        // Ordered by urgency: a filling disk matters more than a cold draught.
+        if let free = a.freeDiskGB, free < 10 {
+            perform(.sheltering, for: 3.2)
+        } else if a.fansLikelySpinning {
+            perform(.shivering, for: 2.6)
+        } else if a.idleSeconds > 1200 {
+            perform(.sipping, for: 4.0)
+        } else if let name = milestone(uptime: a.uptime) {
+            milestonesSeen.insert(name)
+            perform(.partying, for: 3.4)
+            emit(.star, count: 10)
+        }
+    }
+
+    /// Something worth a party hat, at most once each per session.
+    private func milestone(uptime: TimeInterval) -> String? {
+        let days = Int(uptime / 86_400)
+        if days >= 7, !milestonesSeen.contains("uptime-week") { return "uptime-week" }
+        let weekday = Calendar.current.component(.weekday, from: Date())
+        let hour = Calendar.current.component(.hour, from: Date())
+        // Friday evening, once.
+        if weekday == 6, hour >= 17, !milestonesSeen.contains("friday") { return "friday" }
+        return nil
+    }
+
+    /// Fires while you drag something across the screen, so Boo watches it.
+    func watchDrag(at point: CGPoint) {
+        guard act == .none else { return }
+        perform(.watching, for: 1.2)
+        let dx = point.x - screenPosition.x
+        let dy = point.y - screenPosition.y
+        lookX = max(-1, min(1, dx / 220))
+        lookY = max(-1, min(1, -dy / 220))
+    }
+
+    private func perform(_ a: Act, for seconds: Double) {
+        guard act != a else { return }
+        set(a, for: seconds)
+    }
+
+    // MARK: - Typing
+
+    private func startTyping() {
+        actResetTask?.cancel()
+        act = .typing
+        handTimer?.invalidate()
+        // Hands alternate faster the harder you type: ~5/sec flat out,
+        // ~1.5/sec at a gentle pace.
+        handTimer = Timer.scheduledTimer(withTimeInterval: 0.09, repeats: true) {
+            [weak self] _ in
+            guard let me = self else { return }
+            Task { @MainActor in
+                let period = 0.34 - me.typingIntensity * 0.22
+                let phase = Date().timeIntervalSince1970.truncatingRemainder(
+                    dividingBy: period * 2)
+                me.leftHandDown = phase < period
+            }
+        }
+    }
+
+    private func stopTyping() {
+        handTimer?.invalidate(); handTimer = nil
+        if act == .typing { act = .none }
+        // A long stretch that just ended is the moment a nudge is earned.
+        if focusMinutes >= 25, swoopEnabled { focusNudge() }
+    }
+
+    /// The reworked nudge: only after a real break in a real work stretch,
+    /// and it says something true rather than a random line.
+    private func focusNudge() {
+        let minutes = focusMinutes
+        workStartedAt = nil
+        focusMinutes = 0
+        guard act == .none else { return }
+        act = .swooping
+        let mouse = NSEvent.mouseLocation
+        swoopTarget = CGPoint(x: mouse.x - 70, y: mouse.y + 50)
+        speech = "ssshh… \(minutes) min in"
+        actResetTask?.cancel()
+        actResetTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2.8))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.2)) { speech = nil }
+            swoopTarget = nil
+            try? await Task.sleep(for: .milliseconds(900))
+            guard !Task.isCancelled else { return }
+            if act == .swooping { act = .none }
         }
     }
 

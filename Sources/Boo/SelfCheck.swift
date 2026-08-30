@@ -157,6 +157,42 @@ enum SelfCheck {
                    "capped particles must still expire, \(spam.particles.count) left")
         }
 
+        // Behaviour priority: a filling disk must outrank a cold draught,
+        // and neither may interrupt a performance.
+        MainActor.assumeIsolated {
+            let p = Personality()
+            var reading = Activity.Reading()
+            reading.freeDiskGB = 4          // critical
+            reading.fansLikelySpinning = true
+            p.observe(reading, snapshot: Snapshot())
+            assert(p.act == .sheltering,
+                   "low disk should outrank fans, got \(p.act)")
+
+            // Fans alone, with plenty of disk.
+            let q = Personality()
+            var fans = Activity.Reading()
+            fans.freeDiskGB = 400
+            fans.fansLikelySpinning = true
+            q.observe(fans, snapshot: Snapshot())
+            assert(q.act == .shivering, "fans should shiver, got \(q.act)")
+
+            // Typing beats everything else — you are actively working.
+            let t = Personality()
+            var typing = Activity.Reading()
+            typing.isTyping = true
+            typing.freeDiskGB = 2
+            typing.fansLikelySpinning = true
+            t.observe(typing, snapshot: Snapshot())
+            assert(t.act == .typing, "typing should win, got \(t.act)")
+
+            // Plenty of disk and a quiet machine leaves it alone.
+            let calm = Personality()
+            var quiet = Activity.Reading()
+            quiet.freeDiskGB = 500
+            calm.observe(quiet, snapshot: Snapshot())
+            assert(calm.act == .none, "a quiet Mac should not trigger anything")
+        }
+
         print("self-check passed")
         exit(0)
     }

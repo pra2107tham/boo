@@ -380,6 +380,7 @@ struct DesktopFace: View {
              gazeY: personality.lookY,
              act: personality.act,
              peekFromLeft: personality.peekFromLeft,
+             leftHandDown: personality.leftHandDown,
              heartScale: animator.heartScale,
              voidColor: Color(red: 0.05, green: 0.05, blue: 0.06))
             .frame(width: 96, height: 96)
