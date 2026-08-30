@@ -156,11 +156,23 @@ final class DesktopBoo: ObservableObject {
 
     /// Move the window by a delta during a drag, so exactly one thing
     /// decides where the window is.
-    func moveBy(dx: CGFloat, dy: CGFloat) {
+    /// Move the window by the cursor's screen-space delta.
+    ///
+    /// Both points are in screen coordinates, so y is already the right way
+    /// up and no flip is needed. Coalescing to one move per frame keeps the
+    /// compositor from being handed several positions per redraw, which is
+    /// what made trailing copies of the window appear during a fast drag.
+    func moveTo(mouse: CGPoint, from previous: CGPoint) {
         guard let p = panel else { return }
-        // Screen y grows upward; gesture y grows downward.
-        p.setFrameOrigin(CGPoint(x: p.frame.origin.x + dx,
-                                 y: p.frame.origin.y - dy))
+        let dx = mouse.x - previous.x
+        let dy = mouse.y - previous.y
+        guard dx != 0 || dy != 0 else { return }
+
+        let origin = CGPoint(x: p.frame.origin.x + dx, y: p.frame.origin.y + dy)
+        // setFrameOrigin without animation, and without touching the
+        // animator proxy — going through .animator() here queues implicit
+        // animations that pile up and lag behind the pointer.
+        p.setFrameOrigin(origin)
         personality.screenPosition = CGPoint(x: p.frame.midX, y: p.frame.midY)
     }
 
@@ -205,6 +217,10 @@ final class DesktopBoo: ObservableObject {
     /// and the window just shivered in place instead of lapping the cursor.
     func flyTo(_ target: CGPoint?, animated: Bool = true) {
         guard let p = panel else { return }
+        // Never move the window from here while the user is dragging it —
+        // a swoop or lap firing mid-drag would fight the pointer for the
+        // same window and tear.
+        guard personality.act != .squashed else { return }
         let destination: CGPoint
         if let t = target {
             destination = CGPoint(x: t.x - p.frame.width / 2,
@@ -329,7 +345,7 @@ struct DesktopFace: View {
             Button("Do a lap around my cursor") { personality.orbitCursor() }
             Button("Come tell me to focus") { personality.swoop() }
             Button("Shower hearts") { personality.showerHearts() }
-            Button("Give me a fright") { personality.scare() }
+            Button("Go hide") { personality.peek() }
             Divider()
             Button("Hide desktop Boo") { owner.isVisible = false }
             Button("Quit Boo") { NSApplication.shared.terminate(nil) }
@@ -355,7 +371,11 @@ struct DesktopFace: View {
                                      + personality.dragTilt), anchor: .bottom)
             .rotation3DEffect(.degrees(personality.spin), axis: (x: 0, y: 1, z: 0))
             .scaleEffect(personality.scale)
-            .offset(y: animator.float * 3 + hop - 46)
+            .offset(x: personality.peekSlide)
+            // Idle float pauses during a drag: a ghost bobbing inside a window
+            // that is itself moving reads as the drag lagging behind.
+            .offset(y: (personality.act == .squashed ? 0 : animator.float * 3)
+                        + hop - 46)
             .shadow(color: .black.opacity(0.28), radius: 10, y: 5)
     }
 
@@ -419,14 +439,22 @@ struct DesktopFace: View {
     // MARK: - Interaction
 
     private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 2, coordinateSpace: .global)
-            .onChanged { value in
+        // Screen coordinates, NOT .global.
+        //
+        // SwiftUI's .global space is relative to the window — and this
+        // gesture moves that window on every event. So each frame the origin
+        // shifted underneath the gesture, the reported location was measured
+        // against an already-moved window, and the delta came back wrong.
+        // That feedback loop is what produced the lag, the vibration and the
+        // visible clones. NSEvent.mouseLocation is in screen space and does
+        // not move when the window does.
+        DragGesture(minimumDistance: 2)
+            .onChanged { _ in
                 if personality.act != .squashed { personality.beginDrag() }
-                let dx = value.location.x - lastDrag.x
-                let dy = value.location.y - lastDrag.y
-                if lastDrag != .zero { owner.moveBy(dx: dx, dy: dy) }
-                lastDrag = value.location
-                personality.dragging(velocity: value.velocity)
+                let mouse = NSEvent.mouseLocation
+                defer { lastDrag = mouse }
+                guard lastDrag != .zero else { return }
+                owner.moveTo(mouse: mouse, from: lastDrag)
             }
             .onEnded { value in
                 lastDrag = .zero

@@ -86,6 +86,9 @@ final class Personality: ObservableObject {
     @Published private(set) var squash: CGFloat = 1
     /// Lean angle while being dragged, degrees.
     @Published private(set) var dragTilt: Double = 0
+    /// How far Boo has slid toward a screen edge while peeking.
+    @Published private(set) var peekSlide: CGFloat = 0
+    private var peekOffset: CGFloat = 0
     @Published private(set) var danceAngle: CGFloat = 0
 
     /// Set by the desktop window so cursor tracking knows where Boo is.
@@ -348,7 +351,7 @@ final class Personality: ObservableObject {
             guard let me = self else { return }
             Task { @MainActor in
                 guard me.scaresEnabled else { return }
-                if me.act == .none { me.scare() }
+                if me.act == .none { me.peek() }
                 me.scheduleScare()
             }
         }
@@ -428,20 +431,35 @@ final class Personality: ObservableObject {
     }
 
     /// Rare, deliberately startling, then immediately apologetic.
-    func scare() {
+    /// Peek out from behind the nearest screen edge, then duck back.
+    ///
+    /// Replaces the old jump scare. A scare is startling once and irritating
+    /// every time after, and it fired while you were concentrating — the
+    /// worst possible moment. Peeking is the same mischief without the
+    /// adrenaline: it slides mostly off-screen, shows one eye, and hides.
+    func peek() {
+        guard act != .squashed, act != .orbiting else { return }
         noteActivity()
-        act = .scared
         actResetTask?.cancel()
+        act = .peeking
+        // Slide toward the nearest horizontal edge, leaving a sliver showing.
+        peekOffset = screenPosition.x < (NSScreen.main?.frame.midX ?? 700) ? -62 : 62
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
+            peekSlide = peekOffset
+        }
         actResetTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(700))
+            try? await Task.sleep(for: .milliseconds(1600))
             guard !Task.isCancelled else { return }
-            act = .giggling          // it laughs at you afterwards
-            emit(.star, count: 6)
-            try? await Task.sleep(for: .milliseconds(1400))
+            // Duck back out of sight, then return to normal.
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) { peekSlide = 0 }
+            try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
-            act = .none
+            if act == .peeking { act = .none }
         }
     }
+
+    /// Kept so the menu item and any existing callers still work.
+    func scare() { peek() }
 
     /// Hovering long enough reads as petting.
     func pet() {
