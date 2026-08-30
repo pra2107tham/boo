@@ -35,5 +35,18 @@ jobs:
           body: |
             Download the DMG below, open it, and drag Boo to Applications.
 
-            Boo is not notarised by Apple, so the first launch needs a
-            right-click > Open. After that it opens normally.
+            ### macOS will say it cannot verify Boo
+
+            That is Gatekeeper — it says the same about every app not notarised
+            by Apple, which needs a paid developer account. Boo is open source,
+            so you can read every line it runs.
+
+            Run this once after installing:
+
+            ```
+            xattr -dr com.apple.quarantine /Applications/Boo.app
+            ```
+
+            Boo then opens normally. If you would rather not use Terminal:
+            right-click Boo and choose **Open**, or go to System Settings >
+            Privacy & Security and click **Open Anyway**.

@@ -96,7 +96,7 @@ final class BooState: ObservableObject {
 
     var readings: [Reading] {
         var rows: [Reading] = [
-            .percent("Processor", snapshot.cpu),
+            .percent("CPU", snapshot.cpu),
             .percent("Memory", snapshot.memory)
         ]
         if let b = snapshot.battery {
